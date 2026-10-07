@@ -1,0 +1,2239 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f7f8">
+<meta name="description" content="Análisis matricial de vigas, pórticos y cerchas, paso a paso, para estudiantes de ingeniería civil.">
+<title>Rigidez</title>
+<style>
+/* Rigidez: cuaderno de cálculo para análisis matricial */
+:root {
+  --paper: #f4f7f8;
+  --sheet: #ffffff;
+  --grid: #dde5ea;
+  --grid-m: #c3d0d8;
+  --ink: #14212b;
+  --ink-2: #51616d;
+  --rule: #cfd9df;
+  --load: #d1342a;
+  --react: #1f7a3f;
+  --defo: #1f63b5;
+  --cN: #7b4ba6;
+  --cV: #b26a00;
+  --cM: #0e7c6b;
+  --focus: #1f63b5;
+  --bad: #b3261e;
+  --good: #1f7a3f;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1a22;
+    --sheet: #15232d;
+    --grid: #1c2d39;
+    --grid-m: #27404f;
+    --ink: #e6eef2;
+    --ink-2: #9db0bd;
+    --rule: #2b3f4d;
+    --load: #ff6b5e;
+    --react: #5fc382;
+    --defo: #6aa7ff;
+    --cN: #c29bf0;
+    --cV: #f0b04d;
+    --cM: #4fd1bb;
+    --focus: #6aa7ff;
+    --bad: #ff8a80;
+    --good: #5fc382;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0f1a22;
+  --sheet: #15232d;
+  --grid: #1c2d39;
+  --grid-m: #27404f;
+  --ink: #e6eef2;
+  --ink-2: #9db0bd;
+  --rule: #2b3f4d;
+  --load: #ff6b5e;
+  --react: #5fc382;
+  --defo: #6aa7ff;
+  --cN: #c29bf0;
+  --cV: #f0b04d;
+  --cM: #4fd1bb;
+  --focus: #6aa7ff;
+  --bad: #ff8a80;
+  --good: #5fc382;
+}
+
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.45 var(--sans);
+  min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+small { font-size: 0.72em; color: var(--ink-2); display: block; line-height: 1.1; }
+
+#app { max-width: 760px; margin: 0 auto; padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+.home #app, #app.home { padding-bottom: 32px; }
+
+/* ----------------------------------------------------------- cabecera */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 4px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px 6px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  min-height: 56px;
+}
+.top h1 { margin: 0; font: 600 20px/1.1 var(--serif); letter-spacing: 0.1px; flex: 1; }
+.top h1 small { font: 400 13px/1.2 var(--sans); margin-top: 3px; color: var(--ink-2); }
+.iconbtn {
+  width: 44px; height: 44px; border: 0; background: transparent; border-radius: 2px;
+  display: grid; place-items: center; color: var(--ink);
+}
+.iconbtn:active { background: var(--grid); }
+.iconbtn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* --------------------------------------------------------------- inicio */
+.hero { padding: 28px 18px 8px; }
+.hero h1 { font: 600 40px/1 var(--serif); margin: 0 0 10px; letter-spacing: -0.5px; }
+.hero p { margin: 0; max-width: 34ch; color: var(--ink-2); font-size: 17px; line-height: 1.4; }
+
+.kinds { margin-top: 22px; }
+.kind { border-top: 1px solid var(--rule); padding: 18px 18px 20px; }
+.kind:last-child { border-bottom: 1px solid var(--rule); }
+.kind .thumb { border: 1px solid var(--grid-m); background: var(--paper); margin-bottom: 14px; }
+.kind .thumb svg { display: block; width: 100%; height: auto; }
+.kind h2 { font: 600 22px/1.15 var(--serif); margin: 0 0 4px; }
+.kind p { margin: 0 0 14px; color: var(--ink-2); max-width: 44ch; }
+.kind .row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------------------------------------------------------------- botones */
+.btn {
+  min-height: 44px; padding: 0 18px; border-radius: 2px; border: 1.5px solid var(--ink);
+  background: transparent; font-weight: 600; letter-spacing: 0.1px;
+}
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.quiet { border-color: var(--rule); font-weight: 500; }
+.btn.danger { border-color: var(--bad); color: var(--bad); }
+.btn.sm { min-height: 40px; padding: 0 12px; font-size: 15px; }
+.btn.full { width: 100%; }
+
+/* -------------------------------------------------------------- dibujo */
+.draw {
+  position: sticky; top: calc(56px + env(safe-area-inset-top)); z-index: 10;
+  background: var(--paper); border-bottom: 1px solid var(--grid-m);
+}
+.draw svg.scene { display: block; width: 100%; height: auto; max-height: 40vh; }
+.scene .grid { stroke: var(--grid); stroke-width: 1; }
+.scene .gridM { stroke: var(--grid-m); stroke-width: 1; }
+.scene .bar { stroke: var(--ink); stroke-linecap: round; fill: none; }
+.scene .bar.ghost { stroke: var(--ink-2); stroke-dasharray: 4 4; opacity: 0.7; }
+.scene .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1.8; }
+.scene .sup { stroke: var(--ink); stroke-width: 1.8; fill: none; stroke-linecap: round; }
+.scene .sup.thin { stroke-width: 1; }
+.scene .supfill { fill: var(--paper); stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; }
+.scene .load { stroke: var(--load); fill: none; }
+.scene .react { stroke: var(--react); fill: none; }
+.scene .defo { stroke: var(--defo); }
+.scene .fillc { fill: currentColor; }
+.scene polygon.load, .scene polygon.react { stroke-width: 0.5; }
+.scene .load.fillc { fill: var(--load); }
+.scene .react.fillc { fill: var(--react); }
+.scene .defo.fillc { fill: var(--defo); }
+.scene .tr.tens { stroke: var(--defo); }
+.scene .tr.comp { stroke: var(--load); }
+.scene .tr.zero { stroke: var(--ink-2); stroke-dasharray: 4 4; }
+.scene text.dlbl.tens { fill: var(--defo); }
+.scene text.dlbl.comp { fill: var(--load); }
+.scene text.dlbl.zero { fill: var(--ink-2); }
+.scene .dg { stroke-width: 1.6; stroke-linejoin: round; }
+.scene .dg.N { fill: var(--cN); fill-opacity: 0.2; stroke: var(--cN); }
+.scene .dg.V { fill: var(--cV); fill-opacity: 0.2; stroke: var(--cV); }
+.scene .dg.M { fill: var(--cM); fill-opacity: 0.2; stroke: var(--cM); }
+.scene text { font-family: var(--sans); font-size: 11.5px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round; }
+.scene text.load { fill: var(--load); stroke: var(--paper); }
+.scene text.react { fill: var(--react); }
+.scene text.nlbl { font-style: italic; font-family: var(--serif); font-size: 13px; }
+.scene text.dlbl { font-size: 11px; font-weight: 600; }
+.scene text.dlbl.N { fill: var(--cN); }
+.scene text.dlbl.V { fill: var(--cV); }
+.scene text.dlbl.M { fill: var(--cM); }
+.scene text.legend { fill: var(--ink-2); font-size: 11.5px; }
+
+/* ------------------------------------------------------------- contenido */
+.pad { padding: 16px 16px 8px; }
+.sec-title { font: 600 19px/1.2 var(--serif); margin: 22px 0 4px; }
+.hint { color: var(--ink-2); font-size: 14px; margin: 0 0 10px; max-width: 60ch; }
+.notice { border-left: 3px solid var(--bad); padding: 8px 12px; margin: 14px 0; background: var(--sheet); font-size: 14.5px; }
+.notice.info { border-left-color: var(--focus); }
+
+.item { border-top: 1px solid var(--rule); padding: 12px 0 14px; }
+.item:last-of-type { border-bottom: 1px solid var(--rule); }
+.item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.item-head .tag { font: 600 17px/1 var(--serif); flex: 1; }
+.item-head .tag i { font-weight: 400; color: var(--ink-2); font-size: 14px; font-family: var(--sans); font-style: normal; margin-left: 8px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px 14px; }
+.fld { display: block; min-width: 0; }
+.fld > span:first-child { display: block; font-size: 13.5px; color: var(--ink-2); margin-bottom: 1px; }
+.num { display: flex; align-items: stretch; border-bottom: 1.5px solid var(--ink); }
+.num:focus-within { border-bottom-color: var(--focus); box-shadow: 0 1.5px 0 var(--focus); }
+.num input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 9px 2px; font-size: 16px; font-family: var(--mono); font-variant-numeric: tabular-nums; outline: none; }
+.num .sign { border: 0; background: transparent; width: 36px; color: var(--ink-2); font-size: 17px; }
+.num .sign:active { background: var(--grid); }
+.num.bad { border-bottom-color: var(--bad); }
+.fld select {
+  width: 100%; min-height: 44px; padding: 0 28px 0 8px; border: 1.5px solid var(--ink); border-radius: 2px;
+  background: var(--sheet); appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+}
+.fld.wide { grid-column: 1 / -1; }
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15.5px; }
+.check input { width: 22px; height: 22px; accent-color: var(--ink); }
+.unit-note { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+.addrow { margin: 14px 0 6px; }
+
+/* -------------------------------------------------------- barra inferior */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; justify-content: center;
+  background: var(--paper); border-top: 1px solid var(--ink);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabs-in { display: flex; width: 100%; max-width: 760px; }
+.tab {
+  flex: 1; min-height: 60px; border: 0; background: transparent; color: var(--ink-2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 12.5px;
+  border-top: 3px solid transparent; margin-top: -1px;
+}
+.tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-current="page"] { color: var(--ink); font-weight: 700; border-top-color: var(--ink); }
+
+/* ------------------------------------------------------------ resultados */
+.seg { display: flex; gap: 0; padding: 10px 16px; overflow-x: auto; background: var(--paper); border-bottom: 1px solid var(--rule); scrollbar-width: none; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border: 1.5px solid var(--ink); background: transparent; margin-left: -1.5px; font-size: 15px; }
+.seg button:first-child { margin-left: 0; border-radius: 2px 0 0 2px; }
+.seg button:last-child { border-radius: 0 2px 2px 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); font-weight: 600; }
+
+.tbl-wrap { overflow-x: auto; margin: 6px 0 4px; -webkit-overflow-scrolling: touch; }
+table.res { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+table.res th, table.res td { padding: 7px 10px 7px 0; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.res th:first-child, table.res td:first-child { text-align: left; font-weight: 600; font-family: var(--serif); }
+table.res thead th { font-weight: 500; color: var(--ink-2); font-size: 13.5px; vertical-align: bottom; }
+table.res td { font-family: var(--mono); }
+table.res td.txt { font-family: var(--sans); text-align: left; }
+.pill { display: inline-block; padding: 1px 8px; border: 1.5px solid currentColor; border-radius: 2px; font-size: 13px; font-family: var(--sans); font-weight: 600; }
+.pill.t { color: var(--defo); }
+.pill.c { color: var(--load); }
+.verdict { font-weight: 600; margin: 8px 0; }
+.verdict.good { color: var(--good); }
+.verdict.bad { color: var(--bad); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px; margin: 8px 0; }
+.stat { border-left: 3px solid var(--ink); padding: 2px 0 2px 10px; }
+.stat b { display: block; font: 600 21px/1.15 var(--mono); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13.5px; color: var(--ink-2); }
+.stat.M { border-color: var(--cM); } .stat.V { border-color: var(--cV); } .stat.N { border-color: var(--cN); } .stat.D { border-color: var(--defo); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
+
+/* ----------------------------------------------------------- paso a paso */
+details.step { border-top: 1px solid var(--rule); }
+details.step:last-of-type { border-bottom: 1px solid var(--rule); }
+details.step > summary { list-style: none; cursor: pointer; min-height: 52px; display: flex; align-items: center; padding: 8px 16px; gap: 10px; }
+details.step > summary::-webkit-details-marker { display: none; }
+details.step > summary::before { content: ""; width: 9px; height: 9px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-45deg); transition: transform 0.15s; margin-right: 4px; flex: 0 0 auto; }
+details.step[open] > summary::before { transform: rotate(45deg); }
+.stitle { font: 600 18px/1.25 var(--serif); }
+.sbody { padding: 0 16px 16px; }
+.sbody p { margin: 6px 0 8px; max-width: 62ch; }
+.sbody h4 { margin: 14px 0 4px; font: 600 14.5px/1.2 var(--sans); color: var(--ink-2); }
+.eq { font-family: var(--serif); font-style: italic; font-size: 17px; padding: 6px 0 6px 12px; border-left: 3px solid var(--grid-m); }
+.note { font-size: 14px; color: var(--ink-2); }
+.props { font-size: 14.5px; color: var(--ink-2); margin: 6px 0; line-height: 1.55; }
+details.sub { margin: 6px 0; border: 1px solid var(--rule); }
+details.sub > summary { cursor: pointer; padding: 11px 12px; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+details.sub[open] > summary { border-bottom: 1px solid var(--rule); }
+details.sub > :not(summary) { margin-left: 12px; margin-right: 12px; }
+details.sub > :last-child { margin-bottom: 12px; }
+.mx-wrap { overflow-x: auto; margin: 6px 0; -webkit-overflow-scrolling: touch; border: 1px solid var(--rule); background: var(--sheet); }
+table.mx { border-collapse: collapse; font: 13.5px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+table.mx th, table.mx td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+table.mx thead th { color: var(--ink-2); font: 500 12.5px/1.15 var(--sans); vertical-align: bottom; position: sticky; top: 0; background: var(--sheet); }
+table.mx tbody th { position: sticky; left: 0; background: var(--sheet); text-align: left; font: 600 13px/1.15 var(--mono); border-right: 1px solid var(--rule); z-index: 1; }
+table.mx td.z { color: var(--grid-m); }
+table.mx td.unit { text-align: left; color: var(--ink-2); font-family: var(--sans); }
+table.mx td.rest { color: var(--ink-2); }
+table.mx.dof th, table.mx.dof td { text-align: center; }
+
+/* ----------------------------------------------------------------- varios */
+.empty { padding: 28px 16px; color: var(--ink-2); }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 2px; z-index: 50; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (min-width: 760px) {
+  .draw svg.scene { max-height: 46vh; }
+}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<noscript>Esta aplicación necesita JavaScript para calcular estructuras.</noscript>
+<script>
+/*
+ * Motor de cálculo del Método Matricial de Rigidez (2D)
+ * Soporta: cerchas (truss), vigas continuas (beam) y pórticos (frame).
+ *
+ * Unidades internas coherentes: kN, m  (E en kN/m², A en m², I en m⁴).
+ * Convención de ejes locales: x a lo largo de la barra (nudo 1 -> nudo 2),
+ * y perpendicular a la izquierda, giro antihorario (+).
+ *
+ * Funciona en el navegador (window.Solver) y en Node (module.exports).
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.Solver = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  const EPS = 1e-9;
+
+  /* ---------------------------------------------------------------- álgebra */
+  const zeros = (r, c) => Array.from({ length: r }, () => new Array(c).fill(0));
+
+  function matmul(A, B) {
+    const n = A.length, m = B[0].length, p = B.length;
+    const C = zeros(n, m);
+    for (let i = 0; i < n; i++)
+      for (let k = 0; k < p; k++) {
+        const a = A[i][k];
+        if (a === 0) continue;
+        for (let j = 0; j < m; j++) C[i][j] += a * B[k][j];
+      }
+    return C;
+  }
+
+  const transpose = (A) => A[0].map((_, j) => A.map((row) => row[j]));
+  const matvec = (A, x) => A.map((row) => row.reduce((s, a, j) => s + a * x[j], 0));
+
+  /** Eliminación de Gauss con pivoteo parcial. Devuelve {x} o {singular: k}. */
+  function solveLinear(A0, b0) {
+    const n = b0.length;
+    if (n === 0) return { x: [] };
+    const A = A0.map((r) => r.slice());
+    const b = b0.slice();
+    let scale = 0;
+    for (let i = 0; i < n; i++) scale = Math.max(scale, Math.abs(A[i][i]));
+    if (scale === 0) return { singular: 0 };
+    for (let k = 0; k < n; k++) {
+      let piv = k, best = Math.abs(A[k][k]);
+      for (let i = k + 1; i < n; i++) {
+        if (Math.abs(A[i][k]) > best) { best = Math.abs(A[i][k]); piv = i; }
+      }
+      if (best < 1e-10 * scale) return { singular: k };
+      if (piv !== k) { [A[k], A[piv]] = [A[piv], A[k]]; [b[k], b[piv]] = [b[piv], b[k]]; }
+      for (let i = k + 1; i < n; i++) {
+        const f = A[i][k] / A[k][k];
+        if (f === 0) continue;
+        for (let j = k; j < n; j++) A[i][j] -= f * A[k][j];
+        b[i] -= f * b[k];
+      }
+    }
+    const x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) {
+      let s = b[i];
+      for (let j = i + 1; j < n; j++) s -= A[i][j] * x[j];
+      x[i] = s / A[i][i];
+    }
+    return { x };
+  }
+
+  /* --------------------------------------------------- matrices de elemento */
+  const DOF_NAMES = {
+    truss: ['ux', 'uy'],
+    beam: ['uy', 'rz'],
+    frame: ['ux', 'uy', 'rz'],
+  };
+
+  function localK(kind, E, A, I, L) {
+    if (kind === 'truss') {
+      const a = (E * A) / L;
+      return [[a, 0, -a, 0], [0, 0, 0, 0], [-a, 0, a, 0], [0, 0, 0, 0]];
+    }
+    const k1 = (E * I) / (L * L * L);
+    if (kind === 'beam') {
+      return [
+        [12 * k1, 6 * L * k1, -12 * k1, 6 * L * k1],
+        [6 * L * k1, 4 * L * L * k1, -6 * L * k1, 2 * L * L * k1],
+        [-12 * k1, -6 * L * k1, 12 * k1, -6 * L * k1],
+        [6 * L * k1, 2 * L * L * k1, -6 * L * k1, 4 * L * L * k1],
+      ];
+    }
+    const a = (E * A) / L;
+    return [
+      [a, 0, 0, -a, 0, 0],
+      [0, 12 * k1, 6 * L * k1, 0, -12 * k1, 6 * L * k1],
+      [0, 6 * L * k1, 4 * L * L * k1, 0, -6 * L * k1, 2 * L * L * k1],
+      [-a, 0, 0, a, 0, 0],
+      [0, -12 * k1, -6 * L * k1, 0, 12 * k1, -6 * L * k1],
+      [0, 6 * L * k1, 2 * L * L * k1, 0, -6 * L * k1, 4 * L * L * k1],
+    ];
+  }
+
+  function transformT(kind, c, s) {
+    if (kind === 'truss') {
+      return [[c, s, 0, 0], [-s, c, 0, 0], [0, 0, c, s], [0, 0, -s, c]];
+    }
+    if (kind === 'beam') {
+      return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+    }
+    return [
+      [c, s, 0, 0, 0, 0],
+      [-s, c, 0, 0, 0, 0],
+      [0, 0, 1, 0, 0, 0],
+      [0, 0, 0, c, s, 0],
+      [0, 0, 0, -s, c, 0],
+      [0, 0, 0, 0, 0, 1],
+    ];
+  }
+
+  /* ------------------------------------------------------------ cargas en barra
+   * Direcciones: 'gy' gravedad (+ hacia abajo), 'gx' horizontal global (+ a la
+   * derecha), 'lx' a lo largo de la barra (+ de nudo 1 a 2), 'ly' perpendicular
+   * local (+ a la izquierda del sentido de la barra).
+   */
+  function toLocal(dir, val, c, s) {
+    let fx = 0, fy = 0;
+    switch (dir) {
+      case 'gy': fx = 0; fy = -val; break;
+      case 'gx': fx = val; fy = 0; break;
+      case 'lx': return [val, 0];
+      case 'ly': return [0, val];
+      default: throw new Error('Dirección de carga no válida: ' + dir);
+    }
+    return [fx * c + fy * s, -fx * s + fy * c];
+  }
+
+  /** Normaliza una carga de barra a componentes locales. */
+  function normalizeLoad(kind, ld, L, c, s) {
+    const t = ld.type;
+    if (t === 'udl') {
+      const [qx, qy] = toLocal(ld.dir || 'gy', Number(ld.w) || 0, c, s);
+      return { type: 'udl', qx, qy };
+    }
+    if (t === 'point') {
+      const a = Number(ld.a);
+      if (!(a >= -EPS && a <= L + EPS)) throw new Error('La posición de una carga puntual debe estar dentro de la barra (0 ≤ a ≤ L).');
+      const [Px, Py] = toLocal(ld.dir || 'gy', Number(ld.P) || 0, c, s);
+      return { type: 'point', a: Math.min(Math.max(a, 0), L), Px, Py };
+    }
+    if (t === 'moment') {
+      const a = Number(ld.a);
+      if (!(a >= -EPS && a <= L + EPS)) throw new Error('La posición de un momento aplicado debe estar dentro de la barra.');
+      return { type: 'moment', a: Math.min(Math.max(a, 0), L), M: Number(ld.M) || 0 };
+    }
+    throw new Error('Tipo de carga de barra no válido: ' + t);
+  }
+
+  /** Fuerzas de empotramiento perfecto (reacciones sobre la barra) [N1,V1,M1,N2,V2,M2]. */
+  function fixedEnd6(L, ld) {
+    const f = [0, 0, 0, 0, 0, 0];
+    if (ld.type === 'udl') {
+      const { qx, qy } = ld;
+      f[0] = -qx * L / 2; f[3] = -qx * L / 2;
+      f[1] = -qy * L / 2; f[4] = -qy * L / 2;
+      f[2] = -qy * L * L / 12; f[5] = qy * L * L / 12;
+    } else if (ld.type === 'point') {
+      const a = ld.a, b = L - ld.a, { Px, Py } = ld;
+      f[0] = -Px * b / L; f[3] = -Px * a / L;
+      f[1] = -Py * b * b * (3 * a + b) / (L * L * L);
+      f[4] = -Py * a * a * (a + 3 * b) / (L * L * L);
+      f[2] = -Py * a * b * b / (L * L);
+      f[5] = Py * a * a * b / (L * L);
+    } else if (ld.type === 'moment') {
+      const a = ld.a, b = L - ld.a, M = ld.M;
+      f[1] = 6 * M * a * b / (L * L * L);
+      f[4] = -6 * M * a * b / (L * L * L);
+      f[2] = M * b * (3 * a - L) / (L * L);
+      f[5] = M * a * (2 * L - 3 * a) / (L * L);
+    }
+    return f;
+  }
+
+  /* ----------------------------------------------------- fuerzas internas */
+  /** Esfuerzos en la sección x (desde el nudo 1). side=+1 incluye cargas en x. */
+  function section(el, x, side) {
+    const [N1, V1, M1] = el.fEnd1; // fuerzas sobre la barra en el nudo 1 (locales)
+    let N = -N1, V = V1, M = -M1 + x * V1;
+    for (const ld of el.loadsLocal) {
+      if (ld.type === 'udl') {
+        N += -ld.qx * x; V += ld.qy * x; M += ld.qy * x * x / 2;
+      } else {
+        const on = side > 0 ? ld.a <= x + EPS : ld.a < x - EPS;
+        if (!on) continue;
+        if (ld.type === 'point') {
+          N += -ld.Px; V += ld.Py; M += ld.Py * (x - ld.a);
+        } else if (ld.type === 'moment') {
+          M += -ld.M;
+        }
+      }
+    }
+    return { N, V, M };
+  }
+
+  function samplePoints(el, nSeg) {
+    const L = el.L;
+    const marks = [];
+    for (const ld of el.loadsLocal) if (ld.type !== 'udl') marks.push(ld.a);
+    const pts = [];
+    for (let i = 0; i <= nSeg; i++) {
+      const x = (L * i) / nSeg;
+      if (marks.some((a) => Math.abs(a - x) < 1e-9 * Math.max(1, L))) continue;
+      pts.push({ x, side: 1 });
+    }
+    for (const a of marks) { pts.push({ x: a, side: -1 }); pts.push({ x: a, side: 1 }); }
+    pts.sort((p, q) => (p.x === q.x ? p.side - q.side : p.x - q.x));
+    return pts;
+  }
+
+  /* ------------------------------------------------------------- resolver */
+  function _solve(model) {
+    const kind = model.type;
+    if (!DOF_NAMES[kind]) throw new Error('Tipo de estructura no válido (use truss, beam o frame).');
+    const names = DOF_NAMES[kind];
+    const dpn = names.length;
+    const nodes = model.nodes || [];
+    const elems = model.elements || [];
+    if (nodes.length < 2) throw new Error('Se necesitan al menos 2 nudos.');
+    if (elems.length < 1) throw new Error('Se necesita al menos 1 barra.');
+
+    const nodeIndex = new Map();
+    nodes.forEach((n, i) => {
+      if (nodeIndex.has(n.id)) throw new Error('Nudo repetido: ' + n.id);
+      nodeIndex.set(n.id, i);
+    });
+    const nDof = nodes.length * dpn;
+
+    const dofLabels = [];
+    nodes.forEach((n) => names.forEach((nm) => dofLabels.push({ node: n.id, name: nm })));
+
+    const restr = [], free = [];
+    nodes.forEach((n, i) => {
+      names.forEach((nm, j) => {
+        const g = i * dpn + j;
+        if (n.fix && n.fix[nm]) restr.push(g); else free.push(g);
+      });
+    });
+    if (restr.length === 0) throw new Error('La estructura no tiene apoyos.');
+
+    /* --- barras --- */
+    const K = zeros(nDof, nDof);
+    const F = new Array(nDof).fill(0);
+    const Fnodal = new Array(nDof).fill(0);
+    const Feq = new Array(nDof).fill(0);
+    const els = [];
+
+    for (const e of elems) {
+      const i1 = nodeIndex.get(e.n1), i2 = nodeIndex.get(e.n2);
+      if (i1 === undefined || i2 === undefined) throw new Error(`La barra ${e.id} usa un nudo que no existe.`);
+      const p1 = nodes[i1], p2 = nodes[i2];
+      const dx = p2.x - p1.x, dy = (kind === 'beam' ? 0 : p2.y - p1.y);
+      const L = Math.hypot(dx, dy);
+      if (L < EPS) throw new Error(`La barra ${e.id} tiene longitud cero.`);
+      if (kind === 'beam' && dx <= 0) throw new Error(`En vigas, el nudo inicial de la barra ${e.id} debe estar a la izquierda del final.`);
+      const c = dx / L, s = dy / L;
+      const E = Number(e.E), A = Number(e.A), I = Number(e.I);
+      if (!(E > 0)) throw new Error(`La barra ${e.id} necesita un módulo de elasticidad E > 0.`);
+      if (kind !== 'beam' && !(A > 0)) throw new Error(`La barra ${e.id} necesita un área A > 0.`);
+      if (kind !== 'truss' && !(I > 0)) throw new Error(`La barra ${e.id} necesita una inercia I > 0.`);
+
+      const kL = localK(kind, E, A, I, L);
+      const T = transformT(kind, c, s);
+      const kG = matmul(transpose(T), matmul(kL, T));
+      const dofs = [];
+      for (let j = 0; j < dpn; j++) dofs.push(i1 * dpn + j);
+      for (let j = 0; j < dpn; j++) dofs.push(i2 * dpn + j);
+
+      for (let a = 0; a < dofs.length; a++)
+        for (let b = 0; b < dofs.length; b++) K[dofs[a]][dofs[b]] += kG[a][b];
+
+      els.push({
+        id: e.id, n1: e.n1, n2: e.n2, i1, i2, L, c, s,
+        angle: Math.atan2(dy, dx) * 180 / Math.PI,
+        E, A, I, kLocal: kL, T, kGlobal: kG, dofs,
+        loadsLocal: [], f0Local: new Array(kind === 'beam' ? 4 : kind === 'truss' ? 4 : 6).fill(0),
+        f0Global: null,
+      });
+    }
+
+    /* --- cargas en nudos --- */
+    for (const ld of model.nodalLoads || []) {
+      const idx = nodeIndex.get(ld.node);
+      if (idx === undefined) throw new Error('Una carga nodal usa un nudo que no existe: ' + ld.node);
+      const fx = Number(ld.fx) || 0, fy = Number(ld.fy) || 0, mz = Number(ld.mz) || 0;
+      names.forEach((nm, j) => {
+        const v = nm === 'ux' ? fx : nm === 'uy' ? fy : mz;
+        Fnodal[idx * dpn + j] += v;
+      });
+    }
+
+    /* --- cargas en barras --- */
+    const elById = new Map(els.map((e) => [e.id, e]));
+    const memberLoads = model.memberLoads || [];
+    if (kind === 'truss' && memberLoads.length) throw new Error('Las cerchas solo admiten cargas en los nudos.');
+    for (const ld of memberLoads) {
+      const el = elById.get(ld.elem);
+      if (!el) throw new Error('Una carga de barra usa una barra que no existe: ' + ld.elem);
+      const nl = normalizeLoad(kind, ld, el.L, el.c, el.s);
+      el.loadsLocal.push(nl);
+      const f6 = fixedEnd6(el.L, nl);
+      if (kind === 'beam') {
+        const f4 = [f6[1], f6[2], f6[4], f6[5]];
+        for (let i = 0; i < 4; i++) el.f0Local[i] += f4[i];
+      } else {
+        for (let i = 0; i < 6; i++) el.f0Local[i] += f6[i];
+      }
+    }
+    for (const el of els) {
+      el.f0Global = matvec(transpose(el.T), el.f0Local);
+      for (let a = 0; a < el.dofs.length; a++) Feq[el.dofs[a]] -= el.f0Global[a];
+    }
+    for (let i = 0; i < nDof; i++) F[i] = Fnodal[i] + Feq[i];
+
+    /* --- sistema reducido --- */
+    const Kff = free.map((i) => free.map((j) => K[i][j]));
+    const Ff = free.map((i) => F[i]);
+    const sol = solveLinear(Kff, Ff);
+    if (sol.singular !== undefined) {
+      const lab = dofLabels[free[sol.singular]];
+      throw new Error(
+        'La estructura es inestable (mecanismo o apoyos insuficientes). ' +
+        (lab ? `Revise el grado de libertad «${lab.name}» del nudo ${lab.node}.` : '')
+      );
+    }
+    const u = new Array(nDof).fill(0);
+    free.forEach((g, i) => { u[g] = sol.x[i]; });
+
+    /* --- reacciones --- */
+    const Ku = matvec(K, u);
+    const Rvec = new Array(nDof).fill(0);
+    restr.forEach((g) => { Rvec[g] = Ku[g] - F[g]; });
+    const reactions = [];
+    nodes.forEach((n, i) => {
+      const r = { node: n.id, Rx: null, Ry: null, Mz: null };
+      names.forEach((nm, j) => {
+        if (n.fix && n.fix[nm]) {
+          const v = Rvec[i * dpn + j];
+          if (nm === 'ux') r.Rx = v; else if (nm === 'uy') r.Ry = v; else r.Mz = v;
+        }
+      });
+      if (r.Rx !== null || r.Ry !== null || r.Mz !== null) reactions.push(r);
+    });
+
+    /* --- esfuerzos y diagramas --- */
+    const nSeg = 40;
+    const diagrams = [];
+    let glob = {
+      Nmax: { v: -Infinity }, Nmin: { v: Infinity },
+      Vmax: { v: -Infinity }, Vmin: { v: Infinity },
+      Mmax: { v: -Infinity }, Mmin: { v: Infinity },
+      dmax: { v: 0 },
+    };
+    const upd = (key, v, el, x, isMax) => {
+      if (isMax ? v > glob[key].v : v < glob[key].v) glob[key] = { v, elem: el.id, x };
+    };
+
+    for (const el of els) {
+      const uG = el.dofs.map((g) => u[g]);
+      const uL = matvec(el.T, uG);
+      const fL = matvec(el.kLocal, uL).map((v, i) => v + el.f0Local[i]);
+      el.uGlobal = uG; el.uLocal = uL; el.fLocal = fL;
+
+      if (kind === 'truss') {
+        const Nax = -fL[0];
+        el.axial = Nax;
+        el.fEnd1 = [fL[0], 0, 0];
+        diagrams.push({ id: el.id, axial: Nax });
+        upd('Nmax', Nax, el, 0, true); upd('Nmin', Nax, el, 0, false);
+        continue;
+      }
+      if (kind === 'beam') el.fEnd1 = [0, fL[0], fL[1]];
+      else el.fEnd1 = [fL[0], fL[1], fL[2]];
+      el.fEnd2 = kind === 'beam' ? [0, fL[2], fL[3]] : [fL[3], fL[4], fL[5]];
+
+      const pts = samplePoints(el, nSeg);
+      const xs = [], Ns = [], Vs = [], Ms = [];
+      for (const p of pts) {
+        const r = section(el, p.x, p.side);
+        xs.push(p.x); Ns.push(r.N); Vs.push(r.V); Ms.push(r.M);
+        upd('Nmax', r.N, el, p.x, true); upd('Nmin', r.N, el, p.x, false);
+        upd('Vmax', r.V, el, p.x, true); upd('Vmin', r.V, el, p.x, false);
+        upd('Mmax', r.M, el, p.x, true); upd('Mmin', r.M, el, p.x, false);
+      }
+      // puntos de momento máximo dentro de la barra (cortante = 0) para udl
+      for (const ld of el.loadsLocal) {
+        if (ld.type === 'udl' && Math.abs(ld.qy) > 1e-12 && el.loadsLocal.length === 1) {
+          const x0 = -el.fEnd1[1] / ld.qy;
+          if (x0 > 1e-9 && x0 < el.L - 1e-9) {
+            const r = section(el, x0, 1);
+            upd('Mmax', r.M, el, x0, true); upd('Mmin', r.M, el, x0, false);
+          }
+        }
+      }
+
+      // deformada local por doble integración de M/EI
+      const nDef = 60;
+      const v1 = kind === 'beam' ? uL[0] : uL[1];
+      const th1 = kind === 'beam' ? uL[1] : uL[2];
+      const v2 = kind === 'beam' ? uL[2] : uL[4];
+      const u1 = kind === 'beam' ? 0 : uL[0];
+      const u2 = kind === 'beam' ? 0 : uL[3];
+      const dxg = el.L / nDef;
+      const vv = [v1];
+      let th = th1, vcur = v1;
+      let kPrev = section(el, 0, 1).M / (el.E * el.I);
+      for (let i = 1; i <= nDef; i++) {
+        const x = dxg * i;
+        const kNow = section(el, x, 1).M / (el.E * el.I);
+        const thNext = th + 0.5 * (kPrev + kNow) * dxg;
+        vcur += 0.5 * (th + thNext) * dxg;
+        th = thNext; kPrev = kNow;
+        vv.push(vcur);
+      }
+      const corr = v2 - vv[nDef];
+      const def = [];
+      for (let i = 0; i <= nDef; i++) {
+        const x = dxg * i;
+        const vloc = vv[i] + corr * (x / el.L);
+        const uloc = u1 + (u2 - u1) * (x / el.L);
+        const ux = uloc * el.c - vloc * el.s;
+        const uy = uloc * el.s + vloc * el.c;
+        def.push({ x, vloc, dx: ux, dy: uy });
+        if (Math.abs(vloc) > Math.abs(glob.dmax.v)) glob.dmax = { v: vloc, elem: el.id, x };
+      }
+      diagrams.push({ id: el.id, x: xs, N: Ns, V: Vs, M: Ms, def });
+    }
+
+    /* --- equilibrio global --- */
+    let sx = 0, sy = 0, sm = 0;
+    nodes.forEach((n) => {
+      const idx = nodeIndex.get(n.id);
+      const py = kind === 'beam' ? 0 : n.y;
+      const fx = kind === 'beam' ? 0 : Fnodal[idx * dpn + names.indexOf('ux')];
+      const fy = Fnodal[idx * dpn + names.indexOf('uy')];
+      const mz = names.includes('rz') ? Fnodal[idx * dpn + names.indexOf('rz')] : 0;
+      sx += fx; sy += fy; sm += n.x * fy - py * fx + mz;
+    });
+    for (const el of els) {
+      const p1 = nodes[el.i1];
+      const y1 = kind === 'beam' ? 0 : p1.y;
+      for (const ld of el.loadsLocal) {
+        let fxl = 0, fyl = 0, a = 0, mo = 0;
+        if (ld.type === 'udl') { fxl = ld.qx * el.L; fyl = ld.qy * el.L; a = el.L / 2; }
+        else if (ld.type === 'point') { fxl = ld.Px; fyl = ld.Py; a = ld.a; }
+        else { mo = ld.M; }
+        const fgx = fxl * el.c - fyl * el.s, fgy = fxl * el.s + fyl * el.c;
+        const px = p1.x + a * el.c, py = y1 + a * el.s;
+        sx += fgx; sy += fgy; sm += px * fgy - py * fgx + mo;
+      }
+    }
+    nodes.forEach((n, i) => {
+      const py = kind === 'beam' ? 0 : n.y;
+      const ix = names.indexOf('ux'), iy = names.indexOf('uy'), ir = names.indexOf('rz');
+      const rx = ix >= 0 ? Rvec[i * dpn + ix] : 0;
+      const ry = Rvec[i * dpn + iy];
+      const rm = ir >= 0 ? Rvec[i * dpn + ir] : 0;
+      sx += rx; sy += ry; sm += n.x * ry - py * rx + rm;
+    });
+    const refMag = Math.max(1, ...Fnodal.map(Math.abs), ...Rvec.map(Math.abs));
+    const tol = 1e-6 * refMag * Math.max(1, ...nodes.map((n) => Math.abs(n.x)), ...nodes.map((n) => Math.abs(n.y || 0)));
+    const equilibrium = {
+      sumFx: sx, sumFy: sy, sumM: sm,
+      ok: (kind === 'beam' || Math.abs(sx) < tol) && Math.abs(sy) < tol && (kind === 'truss' ? true : Math.abs(sm) < tol),
+    };
+    if (kind === 'truss') {
+      // en cercha el momento se verifica igualmente (fuerzas puras)
+      equilibrium.ok = Math.abs(sx) < tol && Math.abs(sy) < tol && Math.abs(sm) < tol;
+    }
+
+    return {
+      ok: true, type: kind, dpn, dofNames: names, dofLabels,
+      nDof, free, restr,
+      nodes: nodes.map((n) => ({ id: n.id, x: n.x, y: kind === 'beam' ? 0 : n.y })),
+      elements: els, K, F, Fnodal, Feq, Kff, Ff, uf: sol.x, u, Rvec, reactions,
+      diagrams, extremes: glob, equilibrium,
+    };
+  }
+
+  function solve(model) {
+    try { return _solve(model); }
+    catch (err) { return { ok: false, error: err.message }; }
+  }
+
+  return { solve, section, localK, transformT, fixedEnd6, solveLinear, matmul, transpose, matvec, DOF_NAMES };
+});
+
+</script>
+<script>
+/*
+ * Modelo de datos de la app: estado editable, ejemplos y conversión al
+ * formato que entiende el motor de cálculo (kN, m).
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.Model = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  const FIX = {
+    free: {},
+    pin: { ux: true, uy: true },
+    roller: { uy: true },
+    rollerx: { ux: true },
+    fixed: { ux: true, uy: true, rz: true },
+  };
+
+  const SUPPORT_OPTIONS = {
+    beam: [['free', 'Libre'], ['roller', 'Apoyo simple (fija y)'], ['fixed', 'Empotrado']],
+    frame: [['free', 'Libre'], ['pin', 'Articulado (fija x e y)'], ['roller', 'Rodillo (fija y)'],
+      ['rollerx', 'Rodillo horizontal (fija x)'], ['fixed', 'Empotrado']],
+    truss: [['free', 'Libre'], ['pin', 'Articulado (fija x e y)'], ['roller', 'Rodillo (fija y)'],
+      ['rollerx', 'Rodillo horizontal (fija x)']],
+  };
+
+  const TYPE_INFO = {
+    beam: { name: 'Vigas continuas', short: 'Viga', blurb: 'Tramos con apoyos simples o empotrados. Flexión y corte.' },
+    frame: { name: 'Pórticos planos', short: 'Pórtico', blurb: 'Columnas y vigas rígidas. Axial, corte y momento.' },
+    truss: { name: 'Cerchas planas', short: 'Cercha', blurb: 'Barras articuladas con carga en los nudos. Solo axial.' },
+  };
+
+  // E del concreto según E.060: Ec = 15000 √f'c (kg/cm²), convertido a MPa
+  const concreteE = (fc) => Math.round(15000 * Math.sqrt(fc) * 0.0980665);
+  const MATERIALS = [
+    { key: 'c210', label: "Concreto f'c = 210 kg/cm²", E: concreteE(210) },
+    { key: 'c280', label: "Concreto f'c = 280 kg/cm²", E: concreteE(280) },
+    { key: 's200', label: 'Acero (E = 200 GPa)', E: 200000 },
+    { key: 'w10', label: 'Madera (E = 10 GPa)', E: 10000 },
+  ];
+
+  const newSection = () => ({ mode: 'rect', b: 30, h: 50, A: 1500, I: 312500 });
+
+  function emptyState(type) {
+    const st = {
+      v: 1, type, nextNode: 1, nextBar: 1,
+      nodes: [], bars: [], nodal: [], member: [],
+      mat: { E: concreteE(210) }, sec: newSection(),
+    };
+    const addN = (x, y, sup) => { st.nodes.push({ id: st.nextNode++, x, y, sup }); };
+    const addB = (n1, n2) => { st.bars.push({ id: st.nextBar++, n1, n2, custom: false, E: st.mat.E, sec: newSection() }); };
+    if (type === 'beam') {
+      addN(0, 0, 'roller'); addN(5, 0, 'roller'); addB(1, 2);
+    } else if (type === 'frame') {
+      addN(0, 0, 'fixed'); addN(0, 3, 'free'); addB(1, 2);
+      st.sec = { mode: 'rect', b: 30, h: 30, A: 900, I: 67500 };
+    } else {
+      addN(0, 0, 'pin'); addN(4, 0, 'roller'); addN(2, 3, 'free');
+      addB(1, 3); addB(2, 3); addB(1, 2);
+      st.mat.E = 200000;
+      st.sec = { mode: 'manual', b: 5, h: 5, A: 20, I: 100 };
+    }
+    return st;
+  }
+
+  function example(type) {
+    const st = emptyState(type);
+    st.nodes = []; st.bars = []; st.nodal = []; st.member = [];
+    st.nextNode = 1; st.nextBar = 1;
+    const addN = (x, y, sup) => { st.nodes.push({ id: st.nextNode++, x, y, sup }); };
+    const addB = (n1, n2, extra) => {
+      st.bars.push(Object.assign({ id: st.nextBar++, n1, n2, custom: false, E: st.mat.E, sec: newSection() }, extra || {}));
+    };
+    if (type === 'beam') {
+      st.sec = { mode: 'rect', b: 30, h: 50, A: 1500, I: 312500 };
+      addN(0, 0, 'fixed'); addN(5, 0, 'roller'); addN(9, 0, 'roller');
+      addB(1, 2); addB(2, 3);
+      st.member.push({ bar: 1, type: 'udl', val: 20, a: 0, dir: 'gy' });
+      st.member.push({ bar: 2, type: 'point', val: 40, a: 2, dir: 'gy' });
+    } else if (type === 'frame') {
+      st.sec = { mode: 'rect', b: 30, h: 50, A: 1500, I: 312500 };
+      addN(0, 0, 'fixed'); addN(0, 3.5, 'free'); addN(5, 3.5, 'free'); addN(5, 0, 'fixed');
+      const col = { custom: true, sec: { mode: 'rect', b: 30, h: 30, A: 900, I: 67500 } };
+      addB(1, 2, col); addB(2, 3); addB(4, 3, col);
+      st.nodal.push({ node: 2, fx: 20, fy: 0, mz: 0 });
+      st.member.push({ bar: 2, type: 'udl', val: 25, a: 0, dir: 'gy' });
+    } else {
+      st.mat.E = 200000;
+      st.sec = { mode: 'manual', b: 5, h: 5, A: 20, I: 100 };
+      addN(0, 0, 'pin'); addN(4, 0, 'free'); addN(8, 0, 'roller'); addN(2, 3, 'free'); addN(6, 3, 'free');
+      [[1, 2], [2, 3], [4, 5], [1, 4], [4, 2], [2, 5], [5, 3]].forEach(([a, b]) => addB(a, b));
+      st.nodal.push({ node: 4, fx: 0, fy: -10, mz: 0 });
+      st.nodal.push({ node: 5, fx: 0, fy: -10, mz: 0 });
+      st.nodal.push({ node: 2, fx: 0, fy: -20, mz: 0 });
+    }
+    return st;
+  }
+
+  const num = (v) => {
+    const n = typeof v === 'string' && v.trim() !== '' ? Number(v.replace(',', '.')) : v;
+    return typeof n === 'number' && isFinite(n) ? n : 0;
+  };
+
+  /** Propiedades de la sección en cm² y cm⁴ */
+  function sectionProps(sec) {
+    if (sec.mode === 'rect') {
+      const b = num(sec.b), h = num(sec.h);
+      return { A: b * h, I: (b * h ** 3) / 12 };
+    }
+    return { A: num(sec.A), I: num(sec.I) };
+  }
+
+  /** Convierte el estado de la app al modelo del motor de cálculo */
+  function buildModel(st) {
+    const nodeById = new Map(st.nodes.map((n) => [n.id, n]));
+    const bars = st.bars.map((b) => {
+      let { n1, n2 } = b;
+      const p1 = nodeById.get(n1), p2 = nodeById.get(n2);
+      const flipped = st.type === 'beam' && p1 && p2 && p1.x > p2.x;
+      if (flipped) [n1, n2] = [n2, n1];
+      const src = b.custom ? { E: b.E, sec: b.sec } : { E: st.mat.E, sec: st.sec };
+      const sp = sectionProps(src.sec);
+      return {
+        id: b.id, n1, n2, flipped,
+        E: num(src.E) * 1000,          // MPa -> kN/m²
+        A: sp.A / 1e4,                 // cm² -> m²
+        I: sp.I / 1e8,                 // cm⁴ -> m⁴
+      };
+    });
+    const barById = new Map(bars.map((b) => [b.id, b]));
+    const nodes = st.nodes.map((n) => ({
+      id: n.id, x: num(n.x), y: st.type === 'beam' ? 0 : num(n.y),
+      fix: Object.assign({}, FIX[n.sup] || {}),
+      sup: n.sup,
+    }));
+    const nodalLoads = st.nodal.map((l) => ({ node: l.node, fx: num(l.fx), fy: num(l.fy), mz: num(l.mz) }));
+    const memberLoads = st.member.map((l) => {
+      const b = barById.get(l.bar);
+      let a = num(l.a);
+      if (b && b.flipped && l.type !== 'udl') {
+        const p1 = nodeById.get(b.n1), p2 = nodeById.get(b.n2);
+        const L = Math.abs(num(p1.x) - num(p2.x));
+        a = L - a;
+      }
+      const out = { elem: l.bar, type: l.type, dir: l.dir || 'gy', a };
+      if (l.type === 'udl') out.w = num(l.val);
+      else if (l.type === 'point') out.P = num(l.val);
+      else out.M = num(l.val);
+      return out;
+    });
+    return { type: st.type, nodes, elements: bars, nodalLoads, memberLoads };
+  }
+
+  /** Avisos rápidos sobre los datos (antes de calcular) */
+  function checkState(st) {
+    const out = [];
+    const ids = new Set(st.nodes.map((n) => n.id));
+    if (st.bars.some((b) => b.n1 === b.n2)) out.push('Hay barras que empiezan y terminan en el mismo nudo.');
+    if (st.bars.some((b) => !ids.has(b.n1) || !ids.has(b.n2))) out.push('Hay barras con un nudo que ya no existe.');
+    const seen = new Set();
+    for (const b of st.bars) {
+      const k = [Math.min(b.n1, b.n2), Math.max(b.n1, b.n2)].join('-');
+      if (seen.has(k)) { out.push('Hay dos barras entre los mismos nudos.'); break; }
+      seen.add(k);
+    }
+    if (st.type === 'beam') {
+      const xs = st.nodes.map((n) => num(n.x));
+      if (new Set(xs).size !== xs.length) out.push('Dos nudos tienen la misma posición x.');
+    }
+    return out;
+  }
+
+  return { FIX, SUPPORT_OPTIONS, TYPE_INFO, MATERIALS, emptyState, example, sectionProps, buildModel, checkState, newSection, concreteE };
+});
+
+</script>
+<script>
+/*
+ * Dibujo de la estructura sobre papel cuadriculado (SVG en texto).
+ * Modos: model | deformed | N | V | M | R (reacciones)
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.Draw = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  const f1 = (v) => (Math.abs(v) < 1e-9 ? '0' : (Math.round(v * 10) / 10).toString());
+  const px = (v) => Math.round(v * 100) / 100;
+
+  /** Formato de valores en etiquetas del dibujo */
+  function lab(v, unit) {
+    const a = Math.abs(v);
+    let s;
+    if (a === 0) s = '0';
+    else if (a >= 1000) s = v.toFixed(0);
+    else if (a >= 100) s = v.toFixed(1).replace(/\.0$/, '');
+    else if (a >= 1) s = v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+    else s = v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+    return unit ? s + ' ' + unit : s;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function arrow(x1, y1, x2, y2, cls, w) {
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
+    const ux = dx / L, uy = dy / L, hl = 8, hw = 3.6;
+    const bx = x2 - ux * hl, by = y2 - uy * hl;
+    return (
+      `<line x1="${px(x1)}" y1="${px(y1)}" x2="${px(bx)}" y2="${px(by)}" class="${cls}" stroke-width="${w || 1.8}"/>` +
+      `<polygon points="${px(x2)},${px(y2)} ${px(bx - uy * hw)},${px(by + ux * hw)} ${px(bx + uy * hw)},${px(by - ux * hw)}" class="${cls} fillc"/>`
+    );
+  }
+
+  /** Arco de momento. ccw=true: antihorario (momento positivo) */
+  function momentArc(cx, cy, ccw, cls, r) {
+    r = r || 14;
+    const pt = (deg) => [cx + r * Math.cos((deg * Math.PI) / 180), cy - r * Math.sin((deg * Math.PI) / 180)];
+    const a1 = ccw ? -35 : 215, a2 = ccw ? 215 : -35;
+    const p1 = pt(a1), p2 = pt(a2);
+    const sweep = ccw ? 0 : 1;
+    const rad = (a2 * Math.PI) / 180;
+    // tangente en el extremo (coordenadas de pantalla)
+    let tx, ty;
+    if (ccw) { tx = -Math.sin(rad); ty = -Math.cos(rad); } else { tx = Math.sin(rad); ty = Math.cos(rad); }
+    const hl = 7, hw = 3.4;
+    const bx = p2[0] - tx * hl, by = p2[1] - ty * hl;
+    return (
+      `<path d="M${px(p1[0])},${px(p1[1])} A${r},${r} 0 1 ${sweep} ${px(p2[0])},${px(p2[1])}" class="${cls}" fill="none" stroke-width="1.8"/>` +
+      `<polygon points="${px(p2[0])},${px(p2[1])} ${px(bx - ty * hw)},${px(by + tx * hw)} ${px(bx + ty * hw)},${px(by - tx * hw)}" class="${cls} fillc"/>`
+    );
+  }
+
+  function rawText(x, y, s, cls, anchor) {
+    return `<text x="${px(x)}" y="${px(y)}" class="${cls || 'lbl'}" text-anchor="${anchor || 'middle'}">${esc(s)}</text>`;
+  }
+
+  /* ----------------------------------------------------------- apoyos */
+  function supportSVG(X, Y, kind, orient) {
+    const u = 9;
+    let s = '';
+    const hatchDown = (x0, x1, y) => {
+      let h = '';
+      for (let x = x0; x <= x1 + 0.1; x += 5.5) h += `<line x1="${px(x)}" y1="${px(y)}" x2="${px(x - 4)}" y2="${px(y + 5)}" class="sup thin"/>`;
+      return h;
+    };
+    if (kind === 'pin') {
+      s += `<polygon points="${px(X)},${px(Y)} ${px(X - u)},${px(Y + u * 1.7)} ${px(X + u)},${px(Y + u * 1.7)}" class="supfill"/>`;
+      s += `<line x1="${px(X - u * 1.5)}" y1="${px(Y + u * 1.7)}" x2="${px(X + u * 1.5)}" y2="${px(Y + u * 1.7)}" class="sup"/>`;
+      s += hatchDown(X - u * 1.4, X + u * 1.5, Y + u * 1.7);
+    } else if (kind === 'roller') {
+      const yb = Y + u * 1.3;
+      s += `<polygon points="${px(X)},${px(Y)} ${px(X - u)},${px(yb)} ${px(X + u)},${px(yb)}" class="supfill"/>`;
+      s += `<circle cx="${px(X - u * 0.5)}" cy="${px(yb + 3.4)}" r="3.2" class="supfill"/><circle cx="${px(X + u * 0.5)}" cy="${px(yb + 3.4)}" r="3.2" class="supfill"/>`;
+      s += `<line x1="${px(X - u * 1.5)}" y1="${px(yb + 6.8)}" x2="${px(X + u * 1.5)}" y2="${px(yb + 6.8)}" class="sup"/>`;
+      s += hatchDown(X - u * 1.4, X + u * 1.5, yb + 6.8);
+    } else if (kind === 'rollerx') {
+      const xb = X - u * 1.3;
+      s += `<polygon points="${px(X)},${px(Y)} ${px(xb)},${px(Y - u)} ${px(xb)},${px(Y + u)}" class="supfill"/>`;
+      s += `<circle cx="${px(xb - 3.4)}" cy="${px(Y - u * 0.5)}" r="3.2" class="supfill"/><circle cx="${px(xb - 3.4)}" cy="${px(Y + u * 0.5)}" r="3.2" class="supfill"/>`;
+      const xw = xb - 6.8;
+      s += `<line x1="${px(xw)}" y1="${px(Y - u * 1.5)}" x2="${px(xw)}" y2="${px(Y + u * 1.5)}" class="sup"/>`;
+      for (let y = Y - u * 1.4; y <= Y + u * 1.5; y += 5.5) s += `<line x1="${px(xw)}" y1="${px(y)}" x2="${px(xw - 5)}" y2="${px(y + 4)}" class="sup thin"/>`;
+    } else if (kind === 'fixed') {
+      if (orient === 'left' || orient === 'right') {
+        const sg = orient === 'left' ? -1 : 1;
+        const xw = X + sg * 2;
+        s += `<line x1="${px(xw)}" y1="${px(Y - u * 1.7)}" x2="${px(xw)}" y2="${px(Y + u * 1.7)}" class="sup" stroke-width="3"/>`;
+        for (let y = Y - u * 1.6; y <= Y + u * 1.7; y += 5.5) {
+          s += `<line x1="${px(xw)}" y1="${px(y)}" x2="${px(xw + sg * 6)}" y2="${px(y + 5)}" class="sup thin"/>`;
+        }
+      } else {
+        const yw = Y + 2;
+        s += `<line x1="${px(X - u * 1.7)}" y1="${px(yw)}" x2="${px(X + u * 1.7)}" y2="${px(yw)}" class="sup" stroke-width="3"/>`;
+        s += hatchDown(X - u * 1.6, X + u * 1.7, yw);
+      }
+    }
+    return s;
+  }
+
+  function supKind(fix) {
+    if (fix.rz) return 'fixed';
+    if (fix.ux && fix.uy) return 'pin';
+    if (fix.uy) return 'roller';
+    if (fix.ux) return 'rollerx';
+    return null;
+  }
+
+  /* ------------------------------------------------------------- escena */
+  function scene(opts) {
+    const model = opts.model;
+    const result = opts.result && opts.result.ok ? opts.result : null;
+    const mode = opts.mode || 'model';
+    const W = opts.W || 360, H = opts.H || 240;
+    const compact = !!opts.compact;
+    const isBeam = model.type === 'beam';
+    // texto que no se sale del cuadro de dibujo
+    const text = (x, y, str, cls, anchor) => {
+      anchor = anchor || 'middle';
+      const w = String(str).length * 6.3;
+      const x0 = anchor === 'start' ? x : anchor === 'end' ? x - w : x - w / 2;
+      const shift = Math.max(3 - x0, 0) - Math.max(x0 + w - (W - 3), 0);
+      return rawText(x + shift, y, str, cls, anchor);
+    };
+    const nodes = model.nodes;
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const bars = model.elements.filter((e) => nodeMap.has(e.n1) && nodeMap.has(e.n2));
+
+    const xs = nodes.map((n) => n.x), ys = nodes.map((n) => (isBeam ? 0 : n.y));
+    const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
+    const wW = maxx - minx, hW = maxy - miny;
+
+    // márgenes: espacio para apoyos, cargas y diagramas
+    const diag = mode === 'N' || mode === 'V' || mode === 'M';
+    const ampPx = compact ? 0 : 40;
+    let mt = compact ? 26 : 50, mb = compact ? 30 : 46, ml = compact ? 22 : 40, mr = compact ? 22 : 40;
+    if (diag) { mt += ampPx; mb += ampPx; }
+    if (mode === 'deformed') { mt += 14; mb += 14; }
+    if (mode === 'R' && result) {
+      mb += 44;
+      if (!isBeam && result.reactions.some((r) => r.Rx !== null && Math.abs(r.Rx) > 1e-9)) { ml += 64; mr += 64; }
+    }
+    const aw = W - ml - mr, ah = H - mt - mb;
+    let s = Math.min(wW > 1e-9 ? aw / wW : Infinity, hW > 1e-9 ? ah / hW : Infinity);
+    if (!isFinite(s)) s = 40;
+    s = Math.min(s, compact ? 34 : 70);
+    const ox = ml + (aw - wW * s) / 2;
+    const oy = mt + (ah + hW * s) / 2;
+    const X = (x) => ox + (x - minx) * s;
+    const Y = (y) => oy - (y - miny) * s;
+
+    let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" class="scene" role="img" aria-label="${esc(opts.aria || 'Esquema de la estructura')}" preserveAspectRatio="xMidYMid meet">`;
+
+    /* cuadrícula alineada con el mundo */
+    const steps = [0.25, 0.5, 1, 2, 5, 10, 20, 50, 100];
+    let gstep = steps[steps.length - 1];
+    for (const st of steps) if (st * s >= 16) { gstep = st; break; }
+    const gx0 = Math.floor((-ox / s + minx) / gstep) * gstep;
+    const gx1 = Math.ceil(((W - ox) / s + minx) / gstep) * gstep;
+    let g = '';
+    for (let x = gx0; x <= gx1 + 1e-9; x += gstep) {
+      const k = Math.round(x / gstep);
+      g += `<line x1="${px(X(x))}" y1="0" x2="${px(X(x))}" y2="${H}" class="${k % 5 === 0 ? 'gridM' : 'grid'}"/>`;
+    }
+    const gy0 = Math.floor((miny - (oy - H) / s) / gstep) * gstep;
+    const gy1 = Math.ceil((miny + oy / s) / gstep) * gstep;
+    for (let y = gy0; y <= gy1 + 1e-9; y += gstep) {
+      const k = Math.round(y / gstep);
+      g += `<line x1="0" y1="${px(Y(y))}" x2="${W}" y2="${px(Y(y))}" class="${k % 5 === 0 ? 'gridM' : 'grid'}"/>`;
+    }
+    out += `<g aria-hidden="true">${g}</g>`;
+
+    const barS = (b) => {
+      const p1 = nodeMap.get(b.n1), p2 = nodeMap.get(b.n2);
+      return [X(p1.x), Y(isBeam ? 0 : p1.y), X(p2.x), Y(isBeam ? 0 : p2.y)];
+    };
+    const barGeom = (b) => {
+      const [x1, y1, x2, y2] = barS(b);
+      const L = Math.hypot(x2 - x1, y2 - y1) || 1;
+      const ux = (x2 - x1) / L, uy = (y2 - y1) / L; // pantalla
+      return { x1, y1, x2, y2, L, ux, uy, nx: uy, ny: -ux }; // normal local +y en pantalla (izquierda)
+    };
+
+    /* barras */
+    const bw = model.type === 'truss' ? 2.6 : 3.4;
+    const baseClass = mode === 'deformed' ? 'bar ghost' : 'bar';
+    let barsSVG = '';
+    const trussN = mode === 'N' && model.type === 'truss' && result;
+    for (const b of trussN ? [] : bars) {
+      const q = barGeom(b);
+      barsSVG += `<line x1="${px(q.x1)}" y1="${px(q.y1)}" x2="${px(q.x2)}" y2="${px(q.y2)}" class="${baseClass}" stroke-width="${mode === 'deformed' ? 1.6 : bw}"/>`;
+    }
+
+    let overlay = '';
+    let legend = '';
+
+    /* cercha: barras coloreadas según tracción / compresión */
+    if (trussN) {
+      let maxN = 0;
+      for (const d of result.diagrams) maxN = Math.max(maxN, Math.abs(d.axial));
+      let lines = '', labs = '';
+      const cX = nodes.reduce((a, n) => a + X(n.x), 0) / nodes.length, cY = nodes.reduce((a, n) => a + Y(n.y), 0) / nodes.length;
+      for (const b of bars) {
+        const d = result.diagrams.find((q) => q.id === b.id);
+        if (!d) continue;
+        const q = barGeom(b);
+        const n = d.axial;
+        const zero = Math.abs(n) < 1e-6 * Math.max(maxN, 1);
+        const cls = zero ? 'zero' : n > 0 ? 'tens' : 'comp';
+        const w = zero ? 1.8 : 2.6 + 4.4 * (Math.abs(n) / (maxN || 1));
+        lines += `<line x1="${px(q.x1)}" y1="${px(q.y1)}" x2="${px(q.x2)}" y2="${px(q.y2)}" class="tr ${cls}" stroke-width="${px(w)}" stroke-linecap="round"/>`;
+        const mx = (q.x1 + q.x2) / 2, my = (q.y1 + q.y2) / 2;
+        // la etiqueta se corre hacia afuera de la cercha (lejos del centroide)
+        const away = (mx - cX) * q.nx + (my - cY) * q.ny;
+        const sideSign = Math.abs(away) < 1e-6 ? (q.ny <= 0 ? 1 : -1) : away > 0 ? 1 : -1;
+        const sx = q.nx * sideSign, sy = q.ny * sideSign;
+        const anc = sx > 0.45 ? 'start' : sx < -0.45 ? 'end' : 'middle';
+        labs += text(mx + sx * 10, my + sy * 11 + 4, lab(n), 'dlbl ' + cls, anc);
+      }
+      overlay += lines + labs;
+      legend = 'Axial N en kN: azul tracción, rojo compresión';
+    }
+
+    /* diagramas N V M */
+    if (diag && result && !trussN) {
+      const key = mode;
+      let maxAbs = 0;
+      for (const d of result.diagrams) {
+        const arr = key === 'N' && d.axial !== undefined ? [d.axial] : d[key] || [];
+        for (const v of arr) maxAbs = Math.max(maxAbs, Math.abs(v));
+      }
+      const k = maxAbs > 1e-9 ? ampPx / maxAbs : 0;
+      const sign = key === 'M' ? -1 : 1; // M se grafica del lado de la tracción
+      let polys = '', labels = '';
+      const placed = [];
+      const putLabel = (x, y, v, dir) => {
+        if (Math.abs(v) < 1e-3 * Math.max(maxAbs, 1e-9) || Math.abs(v) < 1e-6) return;
+        if (placed.some((p) => Math.hypot(p[0] - x, p[1] - y) < 24)) return;
+        placed.push([x, y]);
+        const ty = y + (dir > 0 ? 11 : -5);
+        labels += text(x, ty, lab(v), 'dlbl ' + key);
+      };
+      for (const b of bars) {
+        const d = result.diagrams.find((q) => q.id === b.id);
+        if (!d) continue;
+        const q = barGeom(b);
+        const el = result.elements.find((e) => e.id === b.id);
+        if (d.axial !== undefined) {
+          const off = sign * d.axial * k;
+          const pts = [[q.x1, q.y1], [q.x1 + q.nx * off, q.y1 + q.ny * off], [q.x2 + q.nx * off, q.y2 + q.ny * off], [q.x2, q.y2]];
+          polys += `<polygon points="${pts.map((p) => px(p[0]) + ',' + px(p[1])).join(' ')}" class="dg ${key}"/>`;
+          const mx = (q.x1 + q.x2) / 2 + q.nx * off, my = (q.y1 + q.y2) / 2 + q.ny * off;
+          labels += text(mx, my + (off * q.ny >= 0 ? 12 : -5), lab(d.axial), 'dlbl ' + key);
+          continue;
+        }
+        const arr = d[key];
+        const pts = [[q.x1, q.y1]];
+        for (let i = 0; i < arr.length; i++) {
+          const t = d.x[i] / el.L;
+          const off = sign * arr[i] * k;
+          pts.push([q.x1 + (q.x2 - q.x1) * t + q.nx * off, q.y1 + (q.y2 - q.y1) * t + q.ny * off]);
+        }
+        pts.push([q.x2, q.y2]);
+        polys += `<polygon points="${pts.map((p) => px(p[0]) + ',' + px(p[1])).join(' ')}" class="dg ${key}"/>`;
+        // etiquetas: extremos y extremos locales
+        let iMax = 0, iMin = 0;
+        arr.forEach((v, i) => { if (v > arr[iMax]) iMax = i; if (v < arr[iMin]) iMin = i; });
+        const constant = arr[iMax] - arr[iMin] < 1e-9 * Math.max(maxAbs, 1);
+        const idx = constant ? [Math.floor(arr.length / 2)] : [iMax, iMin, 0, arr.length - 1];
+        const used = [];
+        for (const i of idx) {
+          const v = arr[i];
+          if (used.some((u) => Math.abs(u - v) < 1e-6 * Math.max(1, Math.abs(v)))) continue; // mismo valor: una sola etiqueta
+          used.push(v);
+          const pt = pts[i + 1];
+          const off = sign * v * k;
+          const away = off * q.ny; // sentido vertical de la etiqueta
+          putLabel(pt[0], pt[1], v, away >= 0 ? 1 : -1);
+        }
+      }
+      overlay += polys + labels;
+      const names = { N: 'Axial N (tracción +)', V: 'Cortante V', M: 'Momento M (se dibuja del lado traccionado)' };
+      legend = names[key] + (key === 'N' ? '' : '');
+    }
+
+    /* deformada */
+    if (mode === 'deformed' && result) {
+      let maxD = 0;
+      for (const e of result.elements) for (let i = 0; i < e.uGlobal.length; i++) {
+        const isRot = result.dofNames[i % result.dpn] === 'rz';
+        if (!isRot) maxD = Math.max(maxD, Math.abs(e.uGlobal[i]));
+      }
+      for (const d of result.diagrams) if (d.def) for (const p of d.def) maxD = Math.max(maxD, Math.abs(p.dx), Math.abs(p.dy));
+      const target = Math.min(W, H) * 0.12;
+      let f = maxD > 0 ? target / (maxD * s) : 1;
+      // factor "redondo"
+      const pow = Math.pow(10, Math.floor(Math.log10(f)));
+      const m = f / pow;
+      f = (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * pow;
+      let paths = '', dots = '';
+      for (const b of bars) {
+        const d = result.diagrams.find((q) => q.id === b.id);
+        const el = result.elements.find((e) => e.id === b.id);
+        if (!d || !el) continue;
+        const p1 = nodeMap.get(b.n1), p2 = nodeMap.get(b.n2);
+        const y1 = isBeam ? 0 : p1.y, y2 = isBeam ? 0 : p2.y;
+        let pts = [];
+        if (d.def) {
+          for (const p of d.def) {
+            const t = p.x / el.L;
+            pts.push([X(p1.x + (p2.x - p1.x) * t + p.dx * f), Y(y1 + (y2 - y1) * t + p.dy * f)]);
+          }
+        } else {
+          const u = el.uGlobal;
+          pts = [[X(p1.x + u[0] * f), Y(y1 + u[1] * f)], [X(p2.x + u[2] * f), Y(y2 + u[3] * f)]];
+        }
+        paths += `<polyline points="${pts.map((p) => px(p[0]) + ',' + px(p[1])).join(' ')}" class="defo" fill="none" stroke-width="2.6"/>`;
+        if (model.type === 'truss') pts.forEach((p) => { dots += `<circle cx="${px(p[0])}" cy="${px(p[1])}" r="3" class="defo fillc"/>`; });
+      }
+      overlay += paths + dots;
+      const dm = result.extremes.dmax;
+      legend = `Deformada ampliada ×${f >= 1 ? Math.round(f) : f.toPrecision(1)}`;
+      if (dm && Math.abs(dm.v) > 0 && model.type !== 'truss') legend += `, flecha máx. ${lab(Math.abs(dm.v) * 1000, 'mm')}`;
+    }
+
+    /* apoyos */
+    let sups = '';
+    const supInfo = new Map();
+    const leftmost = nodes.reduce((a, n) => (n.x < a.x ? n : a), nodes[0]);
+    const rightmost = nodes.reduce((a, n) => (n.x > a.x ? n : a), nodes[0]);
+    for (const n of nodes) {
+      const kind = supKind(n.fix || {});
+      if (!kind) continue;
+      let orient = 'down';
+      if (kind === 'fixed' && isBeam) {
+        if (n === leftmost && n !== rightmost) orient = 'left';
+        else if (n === rightmost && n !== leftmost) orient = 'right';
+      }
+      supInfo.set(n.id, { kind, orient });
+      sups += supportSVG(X(n.x), Y(isBeam ? 0 : n.y), kind, orient);
+    }
+
+    /* cargas */
+    let loads = '';
+    const boxes = [];
+    const loadText = (x, y, str, cls, anchor) => {
+      anchor = anchor || 'middle';
+      const w = String(str).length * 6.3;
+      const x0 = anchor === 'start' ? x : anchor === 'end' ? x - w : x - w / 2;
+      const box = [x0 - 2, y - 11, x0 + w + 2, y + 3];
+      if (boxes.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) return '';
+      boxes.push(box);
+      return text(x, y, str, cls, anchor);
+    };
+    if (mode === 'model' && !opts.hideLoads) {
+      const L0 = compact ? 22 : 32;
+      for (const l of model.nodalLoads) {
+        const n = nodeMap.get(l.node);
+        if (!n) continue;
+        const x = X(n.x), y = Y(isBeam ? 0 : n.y);
+        if (!isBeam && Math.abs(l.fx) > 1e-12) {
+          const sg = l.fx > 0 ? 1 : -1;
+          loads += arrow(x - sg * L0, y, x - sg * 3, y, 'load');
+          if (!compact) loads += loadText(x - sg * L0 * 0.5, y + 15, lab(Math.abs(l.fx), 'kN'), 'lbl load');
+        }
+        if (Math.abs(l.fy) > 1e-12) {
+          const sg = l.fy > 0 ? 1 : -1; // + hacia arriba
+          loads += arrow(x, y + sg * L0, x, y + sg * 3, 'load');
+          if (!compact) loads += loadText(x + 4, y + sg * L0 * 0.55 + 4, lab(Math.abs(l.fy), 'kN'), 'lbl load', 'start');
+        }
+        if (model.type !== 'truss' && Math.abs(l.mz) > 1e-12) {
+          loads += momentArc(x, y, l.mz > 0, 'load', compact ? 11 : 15);
+          if (!compact) loads += loadText(x + 18, y - 14, lab(Math.abs(l.mz), 'kN·m'), 'lbl load', 'start');
+        }
+      }
+      for (const l of model.memberLoads) {
+        const b = bars.find((q) => q.id === l.elem);
+        if (!b) continue;
+        const q = barGeom(b);
+        // vector de la carga en pantalla
+        const val = l.type === 'udl' ? l.w : l.type === 'point' ? l.P : l.M;
+        const sgn = val >= 0 ? 1 : -1;
+        let dir = [0, 1];
+        switch (l.dir) {
+          case 'gx': dir = [1, 0]; break;
+          case 'lx': dir = [q.ux, q.uy]; break;
+          case 'ly': dir = [q.nx, q.ny]; break;
+          default: dir = [0, 1]; // gravedad: hacia abajo en pantalla
+        }
+        dir = [dir[0] * sgn, dir[1] * sgn];
+        const aLen = compact ? 16 : 24;
+        if (l.type === 'udl') {
+          const n = Math.max(2, Math.round(q.L / (compact ? 16 : 20)));
+          let tails = [];
+          for (let i = 0; i <= n; i++) {
+            const t = i / n;
+            const bx = q.x1 + (q.x2 - q.x1) * t, by = q.y1 + (q.y2 - q.y1) * t;
+            const tx = bx - dir[0] * aLen, ty = by - dir[1] * aLen;
+            tails.push([tx, ty]);
+            loads += arrow(tx, ty, bx - dir[0] * 2, by - dir[1] * 2, 'load', 1.4);
+          }
+          loads += `<polyline points="${tails.map((p) => px(p[0]) + ',' + px(p[1])).join(' ')}" class="load" fill="none" stroke-width="1.4"/>`;
+          if (!compact) {
+            const mid = tails[Math.floor(tails.length / 2)];
+            loads += loadText(mid[0], mid[1] - (dir[1] > 0 ? 5 : -12), 'w = ' + lab(Math.abs(val), 'kN/m'), 'lbl load');
+          }
+        } else if (l.type === 'point') {
+          const tt = Math.min(1, Math.max(0, l.a / (q.L / s)));
+          const bx = q.x1 + (q.x2 - q.x1) * tt, by = q.y1 + (q.y2 - q.y1) * tt;
+          const len = compact ? 22 : 34;
+          loads += arrow(bx - dir[0] * len, by - dir[1] * len, bx - dir[0] * 3, by - dir[1] * 3, 'load', 2.2);
+          if (!compact) loads += loadText(bx - dir[0] * len * 0.5 + 4, by - dir[1] * len * 0.5 + (dir[1] > 0 ? -4 : 12), 'P = ' + lab(Math.abs(val), 'kN'), 'lbl load', 'start');
+        } else if (l.type === 'moment') {
+          const tt = Math.min(1, Math.max(0, l.a / (q.L / s)));
+          const bx = q.x1 + (q.x2 - q.x1) * tt, by = q.y1 + (q.y2 - q.y1) * tt;
+          loads += momentArc(bx, by, val > 0, 'load', compact ? 11 : 15);
+          if (!compact) loads += loadText(bx + 18, by - 14, lab(Math.abs(val), 'kN·m'), 'lbl load', 'start');
+        }
+      }
+    }
+
+    /* reacciones */
+    if (mode === 'R' && result) {
+      const L0 = 34;
+      for (const r of result.reactions) {
+        const n = nodeMap.get(r.node);
+        const x = X(n.x), y = Y(isBeam ? 0 : n.y);
+        const si = supInfo.get(r.node) || { kind: 'pin', orient: 'down' };
+        // espacio que ocupa el símbolo del apoyo
+        const gapY = si.kind === 'pin' ? 24 : si.kind === 'roller' ? 27 : si.kind === 'fixed' && si.orient === 'down' ? 12 : 6;
+        const hasMz = r.Mz !== null && Math.abs(r.Mz) > 1e-9;
+        const gapX = (si.kind === 'rollerx' ? 27 : si.kind === 'fixed' && si.orient !== 'down' ? 12 : 8) + (hasMz ? 12 : 0);
+        const wallSide = si.kind === 'rollerx' || (si.kind === 'fixed' && si.orient === 'left') ? -1 : si.kind === 'fixed' && si.orient === 'right' ? 1 : 0;
+        if (r.Rx !== null && Math.abs(r.Rx) > 1e-9) {
+          const sg = r.Rx > 0 ? 1 : -1;
+          const txt = 'Rx ' + lab(r.Rx);
+          if (wallSide !== 0 && wallSide === -sg) { // el apoyo estorba: la flecha sale del nudo
+            const tail = x + sg * 6, head = x + sg * (6 + L0);
+            loads += arrow(tail, y, head, y, 'react');
+            loads += text(head + sg * 4, y + 4, txt, 'lbl react', sg > 0 ? 'start' : 'end');
+          } else {
+            const tail = x - sg * (L0 - 4 + gapX), head = x - sg * gapX;
+            loads += arrow(tail, y, head, y, 'react');
+            loads += text(tail - sg * 4, y + 4, txt, 'lbl react', sg > 0 ? 'end' : 'start');
+          }
+        }
+        if (r.Ry !== null && Math.abs(r.Ry) > 1e-9) {
+          const sg = r.Ry > 0 ? 1 : -1;
+          const tail = sg > 0 ? y + gapY + L0 : y + gapY, head = sg > 0 ? y + gapY : y + gapY + L0;
+          loads += arrow(x, tail, x, head, 'react');
+          const ryTxt = 'Ry ' + lab(r.Ry);
+          const fitsRight = x + 8 + ryTxt.length * 6.3 <= W - 3;
+          loads += text(fitsRight ? x + 8 : x - 8, (tail + head) / 2 + 4, ryTxt, 'lbl react', fitsRight ? 'start' : 'end');
+        }
+        if (r.Mz !== null && Math.abs(r.Mz) > 1e-9) {
+          loads += momentArc(x, y, r.Mz > 0, 'react', 16);
+          const goLeft = !isBeam && x < W / 2;
+          loads += text(x + (goLeft ? -20 : 20), y - 22, 'M ' + lab(r.Mz), 'lbl react', goLeft ? 'end' : 'start');
+        }
+      }
+      legend = 'Reacciones en los apoyos (kN y kN·m)';
+    }
+
+    /* nudos y etiquetas */
+    const occupied = new Map(nodes.map((n) => [n.id, []]));
+    const occ = (id, dx, dy) => { const o = occupied.get(id); if (o) { const m = Math.hypot(dx, dy) || 1; o.push([dx / m, dy / m]); } };
+    for (const b of bars) {
+      const q = barGeom(b);
+      occ(b.n1, q.ux, q.uy); occ(b.n2, -q.ux, -q.uy);
+    }
+    for (const [id, si] of supInfo) {
+      if (si.kind === 'rollerx' || (si.kind === 'fixed' && si.orient === 'left')) occ(id, -1, 0);
+      else if (si.kind === 'fixed' && si.orient === 'right') occ(id, 1, 0);
+      else occ(id, 0, 1);
+    }
+    if (mode === 'model') {
+      for (const l of model.nodalLoads) {
+        if (Math.abs(l.fx) > 1e-12) occ(l.node, l.fx > 0 ? -1 : 1, 0);
+        if (Math.abs(l.fy) > 1e-12) occ(l.node, 0, l.fy > 0 ? 1 : -1);
+        if (Math.abs(l.mz) > 1e-12) { occ(l.node, 1, -1); occ(l.node, 1, 1); }
+      }
+      for (const l of model.memberLoads) {
+        const b = bars.find((q) => q.id === l.elem);
+        if (!b || l.type === 'moment') continue;
+        const v = l.type === 'udl' ? l.w : l.P;
+        const sg = v >= 0 ? 1 : -1;
+        const q = barGeom(b);
+        const d = l.dir === 'gx' ? [1, 0] : l.dir === 'lx' ? [q.ux, q.uy] : l.dir === 'ly' ? [q.nx, q.ny] : [0, 1];
+        occ(b.n1, -d[0] * sg, -d[1] * sg); occ(b.n2, -d[0] * sg, -d[1] * sg);
+      }
+    }
+    if (mode === 'R' && result) {
+      for (const r of result.reactions) {
+        if (r.Rx !== null && Math.abs(r.Rx) > 1e-9) occ(r.node, r.Rx > 0 ? -1 : 1, 0);
+        if (r.Mz !== null && Math.abs(r.Mz) > 1e-9) { occ(r.node, 1, -1); occ(r.node, -1, -1); }
+      }
+    }
+    const momentNodes = new Set();
+    if (mode === 'model') for (const l of model.nodalLoads) if (Math.abs(l.mz) > 1e-12) momentNodes.add(l.node);
+    if (mode === 'R' && result) for (const r of result.reactions) if (r.Mz !== null && Math.abs(r.Mz) > 1e-9) momentNodes.add(r.node);
+    const CAND = [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [-1, 0], [1, 0], [0, 1]].map(([a, b]) => { const m = Math.hypot(a, b); return [a / m, b / m]; });
+    let nds = '';
+    for (const n of nodes) {
+      const x = X(n.x), y = Y(isBeam ? 0 : n.y);
+      nds += `<circle cx="${px(x)}" cy="${px(y)}" r="${compact ? 3 : 4.2}" class="node"/>`;
+      if (!compact) {
+        let best = CAND[0], bestScore = -1;
+        for (const c of CAND) {
+          let sc = Math.PI;
+          for (const o of occupied.get(n.id)) sc = Math.min(sc, Math.acos(Math.max(-1, Math.min(1, c[0] * o[0] + c[1] * o[1]))));
+          if (sc > bestScore + 1e-6) { best = c; bestScore = sc; }
+        }
+        const anchor = best[0] < -0.3 ? 'end' : best[0] > 0.3 ? 'start' : 'middle';
+        const rr = momentNodes.has(n.id) ? 21 : 10;
+        nds += text(x + best[0] * rr, y + best[1] * (rr + 1) + (best[1] === 0 ? 1 : 4), String(n.id), 'nlbl', anchor);
+      }
+    }
+
+    out += barsSVG + overlay + sups + loads + nds;
+    if (legend && !compact) out += text(10, H - 8, legend, 'legend', 'start');
+    out += '</svg>';
+    return out;
+  }
+
+  return { scene, lab };
+});
+
+</script>
+<script>
+/*
+ * Desarrollo paso a paso del método matricial (HTML en texto).
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.Steps = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  const sup = (n) => String(n).split('').map((c) => (c === '-' ? '⁻' : SUP[+c])).join('');
+  const sub = (n) => String(n).split('').map((c) => '₀₁₂₃₄₅₆₇₈₉'[+c]).join('');
+
+  /** Formato numérico compacto para matrices y tablas */
+  function fm(v, dig) {
+    dig = dig || 4;
+    if (v === null || v === undefined || Number.isNaN(v)) return '';
+    if (Math.abs(v) < 1e-9) return '0';
+    const a = Math.abs(v);
+    if (a >= 1e5 || a < 1e-3) {
+      const [m, e] = v.toExponential(dig - 1).split('e');
+      return `${m.replace(/\.?0+$/, '')}×10${sup(parseInt(e, 10))}`;
+    }
+    let s = v.toPrecision(dig);
+    if (s.includes('e')) s = String(+s);
+    if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    return s;
+  }
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  function matrix(M, rowLabels, colLabels, opts) {
+    opts = opts || {};
+    let h = '<div class="mx-wrap" tabindex="0" role="group" aria-label="' + esc(opts.aria || 'Matriz') + '"><table class="mx">';
+    if (colLabels) {
+      h += '<thead><tr><th></th>' + colLabels.map((c) => `<th scope="col">${c}</th>`).join('') + '</tr></thead>';
+    }
+    h += '<tbody>';
+    M.forEach((row, i) => {
+      h += '<tr>' + (rowLabels ? `<th scope="row">${rowLabels[i]}</th>` : '');
+      row.forEach((v, j) => {
+        if (typeof v === 'string') { h += `<td class="unit">${esc(v)}</td>`; return; }
+        const z = Math.abs(v) < 1e-9;
+        h += `<td class="${z ? 'z' : ''}${opts.hl && opts.hl(i, j) ? ' hl' : ''}">${fm(v)}</td>`;
+      });
+      h += '</tr>';
+    });
+    return h + '</tbody></table></div>';
+  }
+
+  function vector(v, labels, opts) {
+    opts = opts || {};
+    return matrix(v.map((x) => [x]), labels, [opts.title || ''], opts);
+  }
+
+  const gl = (r, g) => {
+    const d = r.dofLabels[g];
+    return `${g + 1}<small>N${d.node} ${d.name}</small>`;
+  };
+
+  function localLabels(kind) {
+    if (kind === 'truss') return ['u₁', 'v₁', 'u₂', 'v₂'];
+    if (kind === 'beam') return ['v₁', 'θ₁', 'v₂', 'θ₂'];
+    return ['u₁', 'v₁', 'θ₁', 'u₂', 'v₂', 'θ₂'];
+  }
+
+  function section(title, body, open) {
+    return `<details class="step"${open ? ' open' : ''}><summary><span class="stitle">${title}</span></summary><div class="sbody">${body}</div></details>`;
+  }
+
+  function build(r) {
+    const kind = r.type;
+    const names = r.dofNames;
+    const out = [];
+    const nFree = r.free.length, nR = r.restr.length;
+
+    /* 1. grados de libertad */
+    let b1 = `<p>Cada nudo tiene ${r.dpn} grados de libertad (${names.map((n) => n === 'ux' ? 'ux: horizontal' : n === 'uy' ? 'uy: vertical' : 'rz: giro').join(', ')}). Se numeran nudo por nudo. Los grados restringidos por apoyos son desplazamientos conocidos (cero).</p>`;
+    b1 += '<div class="mx-wrap"><table class="mx dof"><thead><tr><th>Nudo</th><th>x (m)</th>' + (kind === 'beam' ? '' : '<th>y (m)</th>') +
+      names.map((n) => `<th>${n}</th>`).join('') + '</tr></thead><tbody>';
+    r.nodes.forEach((n, i) => {
+      b1 += `<tr><th scope="row">${n.id}</th><td>${fm(n.x)}</td>` + (kind === 'beam' ? '' : `<td>${fm(n.y)}</td>`);
+      names.forEach((nm, j) => {
+        const g = i * r.dpn + j;
+        const isR = r.restr.includes(g);
+        b1 += `<td class="${isR ? 'rest' : ''}">${g + 1}${isR ? ' (R)' : ''}</td>`;
+      });
+      b1 += '</tr>';
+    });
+    b1 += `</tbody></table></div><p class="note">Total: ${r.nDof} grados de libertad, ${nFree} libres y ${nR} restringidos (R).</p>`;
+    out.push(section('Grados de libertad', b1, true));
+
+    /* 2. rigidez de cada barra */
+    let b2 = '<p>Para cada barra se arma la matriz de rigidez en ejes locales <b>[k]</b>, se rota con la matriz de transformación <b>[T]</b> y se obtiene la matriz en ejes globales:</p><p class="eq">[K]ₑ = [T]ᵀ [k] [T]</p>';
+    for (const el of r.elements) {
+      const ll = localLabels(kind);
+      const gLabels = el.dofs.map((g) => gl(r, g));
+      let eb = `<p class="props">L = ${fm(el.L)} m, ángulo = ${fm(el.angle)}°, cos = ${fm(el.c)}, sen = ${fm(el.s)}<br>`;
+      eb += `E = ${fm(el.E)} kN/m²` + (kind !== 'beam' ? `, A = ${fm(el.A)} m²` : '') + (kind !== 'truss' ? `, I = ${fm(el.I)} m⁴` : '');
+      eb += '</p>';
+      if (kind === 'truss') eb += `<p class="eq">EA/L = ${fm((el.E * el.A) / el.L)} kN/m</p>`;
+      else if (kind === 'beam') eb += `<p class="eq">EI/L³ = ${fm((el.E * el.I) / el.L ** 3)} kN/m</p>`;
+      else eb += `<p class="eq">EA/L = ${fm((el.E * el.A) / el.L)} kN/m, EI/L³ = ${fm((el.E * el.I) / el.L ** 3)} kN/m</p>`;
+      eb += '<h4>Matriz local [k]</h4>' + matrix(el.kLocal, ll, ll, { aria: 'Matriz local barra ' + el.id });
+      if (kind !== 'beam') eb += '<h4>Transformación [T]</h4>' + matrix(el.T, ll, ll, { aria: 'Matriz de transformación' });
+      eb += `<h4>Matriz global [K]${sub(el.id)}</h4>` + matrix(el.kGlobal, gLabels, gLabels, { aria: 'Matriz global barra ' + el.id });
+      b2 += `<details class="sub"><summary>Barra ${el.id}, nudos ${el.n1} y ${el.n2}</summary>${eb}</details>`;
+    }
+    out.push(section('Rigidez de cada barra', b2));
+
+    /* 3. ensamblaje */
+    const labs = r.dofLabels.map((_, g) => gl(r, g));
+    let b3 = '<p>Cada término de la matriz de una barra se suma en la fila y columna que le corresponde según la numeración de grados de libertad:</p><p class="eq">[K] = Σ [K]ₑ</p>' +
+      matrix(r.K, labs, labs, { aria: 'Matriz de rigidez global' });
+    out.push(section('Ensamblaje de la matriz global [K]', b3));
+
+    /* 4. cargas */
+    let b4 = '<p>Las cargas en los nudos se colocan directamente. Las cargas dentro de las barras se reemplazan por cargas equivalentes en los nudos (fuerzas de empotramiento perfecto con signo cambiado):</p><p class="eq">{F} = {F nudos} + {F equivalentes}</p>';
+    const hasEq = r.Feq.some((v) => Math.abs(v) > 1e-9);
+    const cols = ['Nudos', ...(hasEq ? ['Equiv.'] : []), 'Total'];
+    const rows = r.F.map((_, i) => [r.Fnodal[i], ...(hasEq ? [r.Feq[i]] : []), r.F[i]]);
+    b4 += matrix(rows, labs, cols, { aria: 'Vector de cargas' });
+    b4 += '<p class="note">Unidades: kN para fuerzas y kN·m para momentos.</p>';
+    out.push(section('Vector de cargas {F}', b4));
+
+    /* 5. condiciones de contorno */
+    const fl = r.free.map((g) => gl(r, g));
+    let b5 = `<p>Los grados restringidos tienen desplazamiento nulo, así que se eliminan sus filas y columnas. Queda un sistema de ${nFree} ecuaciones con los grados libres:</p><p class="eq">[K<sub>ff</sub>] {u<sub>f</sub>} = {F<sub>f</sub>}</p>`;
+    if (nFree === 0) b5 += '<p class="note">Todos los grados están restringidos; no hay desplazamientos que calcular.</p>';
+    else b5 += '<h4>[K<sub>ff</sub>]</h4>' + matrix(r.Kff, fl, fl, { aria: 'Matriz reducida' }) + '<h4>{F<sub>f</sub>}</h4>' + vector(r.Ff, fl, { aria: 'Vector de cargas reducido' });
+    out.push(section('Condiciones de contorno y sistema reducido', b5));
+
+    /* 6. desplazamientos */
+    let b6 = '<p>Se resuelve el sistema (eliminación de Gauss):</p><p class="eq">{u<sub>f</sub>} = [K<sub>ff</sub>]⁻¹ {F<sub>f</sub>}</p>';
+    if (nFree > 0) {
+      b6 += matrix(r.uf.map((v, i) => [v, r.dofLabels[r.free[i]].name === 'rz' ? 'rad' : 'm']), fl, ['Valor', 'Unidad'], { aria: 'Desplazamientos' });
+    }
+    out.push(section('Desplazamientos {u}', b6));
+
+    /* 7. reacciones */
+    let b7 = '<p>Con los desplazamientos conocidos se calculan las reacciones en los grados restringidos:</p><p class="eq">{R} = [K<sub>rf</sub>] {u<sub>f</sub>} − {F<sub>r</sub>}</p>';
+    const rl = r.restr.map((g) => gl(r, g));
+    b7 += vector(r.restr.map((g) => r.Rvec[g]), rl, { title: 'R (kN, kN·m)', aria: 'Reacciones' });
+    out.push(section('Reacciones', b7));
+
+    /* 8. esfuerzos en las barras */
+    let b8 = '<p>Con los desplazamientos de cada barra en ejes locales se obtienen las fuerzas en sus extremos:</p><p class="eq">{f} = [k] {u<sub>local</sub>} + {f<sub>0</sub>}</p><p class="note">{f₀} son las fuerzas de empotramiento perfecto de las cargas dentro de la barra (cero si no hay).</p>';
+    for (const el of r.elements) {
+      const ll = localLabels(kind);
+      const cols2 = ['u local', 'f₀', 'f'];
+      const rows2 = ll.map((_, i) => [el.uLocal[i], el.f0Local[i], el.fLocal[i]]);
+      b8 += `<details class="sub"><summary>Barra ${el.id}</summary>` + matrix(rows2, ll, cols2, { aria: 'Fuerzas en la barra ' + el.id }) + '</details>';
+    }
+    if (kind === 'truss') {
+      b8 += '<p class="eq">N = −f₁ (tracción positiva)</p>';
+    }
+    out.push(section('Fuerzas en las barras', b8));
+
+    /* 9. equilibrio */
+    const eq = r.equilibrium;
+    const z = (v) => (Math.abs(v) < 1e-7 ? '0.000' : v.toFixed(4));
+    let b9 = `<p>Se verifica que las cargas aplicadas y las reacciones estén en equilibrio:</p><div class="mx-wrap"><table class="mx"><tbody>` +
+      (kind === 'beam' ? '' : `<tr><th scope="row">ΣFx</th><td>${z(eq.sumFx)}</td><td class="unit">kN</td></tr>`) +
+      `<tr><th scope="row">ΣFy</th><td>${z(eq.sumFy)}</td><td class="unit">kN</td></tr>` +
+      `<tr><th scope="row">ΣM (origen)</th><td>${z(eq.sumM)}</td><td class="unit">kN·m</td></tr></tbody></table></div>` +
+      `<p class="verdict ${eq.ok ? 'good' : 'bad'}">${eq.ok ? 'El equilibrio se cumple.' : 'No hay equilibrio: revise los datos de entrada.'}</p>`;
+    out.push(section('Verificación de equilibrio', b9, false));
+
+    return out.join('');
+  }
+
+  return { build, fm, matrix };
+});
+
+</script>
+<script>
+/*
+ * Rigidez: interfaz de la app (inicio, editor, resultados y paso a paso).
+ */
+(function () {
+  'use strict';
+
+  const root = document.getElementById('app');
+  const M = window.Model, S = window.Solver, D = window.Draw, ST = window.Steps;
+  const fm = ST.fm;
+
+  const ui = { screen: 'home', tab: 'nodes', view: 'model', confirm: null, toast: null };
+  let st = null;
+  let thumbCache = {};
+
+  /* ------------------------------------------------------- persistencia */
+  const KEY = (t) => 'rigidez:v1:' + t;
+  function loadSaved(type) {
+    try { const s = localStorage.getItem(KEY(type)); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+  }
+  function save() { try { localStorage.setItem(KEY(st.type), JSON.stringify(st)); } catch (e) { /* sin almacenamiento */ } }
+
+  /* ---------------------------------------------------------- utilidades */
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fin = (v) => typeof v === 'number' && isFinite(v);
+  const val = (v) => (fin(v) ? String(v) : '');
+
+  function getPath(o, p) { return p.split('.').reduce((a, k) => (a == null ? a : a[k]), o); }
+  function setPath(o, p, v) {
+    const ks = p.split('.');
+    const last = ks.pop();
+    const t = ks.reduce((a, k) => a[k], o);
+    t[last] = v;
+  }
+
+  const ICON = {
+    back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+    trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+    nodes: '<svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.4"/><circle cx="18" cy="7" r="2.4"/><circle cx="12" cy="18" r="2.4"/></svg>',
+    bars: '<svg viewBox="0 0 24 24"><path d="M3 19h18M5 19V6h14v13M5 6l14 13"/></svg>',
+    loads: '<svg viewBox="0 0 24 24"><path d="M12 3v14M7 12l5 5 5-5M5 21h14"/></svg>',
+    results: '<svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 15l4-6 3 4 4-7"/></svg>',
+  };
+
+  const barWord = () => (st.type === 'beam' ? 'Tramo' : 'Barra');
+
+  /* -------------------------------------------------------- campos HTML */
+  function numField(label, path, opts) {
+    opts = opts || {};
+    const v = getPath(st, path);
+    return `<label class="fld${opts.wide ? ' wide' : ''}"><span>${label}</span><span class="num${fin(v) ? '' : ' bad'}">` +
+      `<input type="text" inputmode="decimal" autocomplete="off" data-p="${path}" data-t="n" value="${esc(val(v))}" aria-label="${esc(label)}">` +
+      (opts.nosign ? '' : `<button type="button" class="sign" data-act="flip" data-p="${path}" aria-label="Cambiar signo de ${esc(label)}">±</button>`) +
+      `</span></label>`;
+  }
+  function selField(label, path, options, opts) {
+    opts = opts || {};
+    const cur = String(getPath(st, path));
+    return `<label class="fld${opts.wide ? ' wide' : ''}"><span>${label}</span><select data-p="${path}" data-t="${opts.t || 's'}">` +
+      options.map(([v, l]) => `<option value="${esc(v)}"${String(v) === cur ? ' selected' : ''}>${esc(l)}</option>`).join('') +
+      '</select></label>';
+  }
+  const nodeOptions = () => st.nodes.map((n) => [n.id, 'Nudo ' + n.id]);
+  const barOptions = () => st.bars.map((b) => [b.id, barWord() + ' ' + b.id]);
+
+  function secInfoText(key) {
+    const sec = key === 'global' ? st.sec : (st.bars[+key.split(':')[1]] || {}).sec;
+    if (!sec) return '';
+    const p = M.sectionProps(sec);
+    if (st.type === 'truss') return `A = ${fm(p.A)} cm²`;
+    if (st.type === 'beam') return `I = ${fm(p.I)} cm⁴`;
+    return `A = ${fm(p.A)} cm², I = ${fm(p.I)} cm⁴`;
+  }
+
+  function secFields(prefix, sec, key) {
+    let h = selField('Sección', prefix + '.mode', [['rect', 'Rectangular b × h'], ['manual', st.type === 'truss' ? 'Área conocida' : 'Propiedades conocidas']], { wide: true });
+    if (sec.mode === 'rect') {
+      h += numField('Base b (cm)', prefix + '.b', { nosign: true }) + numField('Altura h (cm)', prefix + '.h', { nosign: true });
+    } else {
+      if (st.type !== 'beam') h += numField('Área A (cm²)', prefix + '.A', { nosign: true });
+      if (st.type !== 'truss') h += numField('Inercia I (cm⁴)', prefix + '.I', { nosign: true });
+    }
+    h += `<div class="unit-note fld wide" data-sec="${key}">${esc(secInfoText(key))}</div>`;
+    return h;
+  }
+
+  /* ----------------------------------------------------------- dibujos */
+  function drawModelSVG() {
+    return D.scene({ model: M.buildModel(st), mode: 'model', W: 360, H: 230, aria: 'Esquema de la estructura con apoyos y cargas' });
+  }
+  function warnHTML() {
+    const w = M.checkState(st);
+    return w.length ? `<div class="notice">${w.map(esc).join('<br>')}</div>` : '';
+  }
+  function refreshLive() {
+    const d = document.getElementById('draw');
+    if (d && ui.screen === 'edit' && ui.tab !== 'results') d.innerHTML = drawModelSVG();
+    document.querySelectorAll('[data-sec]').forEach((el) => { el.textContent = secInfoText(el.dataset.sec); });
+    const w = document.getElementById('warn');
+    if (w) w.innerHTML = warnHTML();
+  }
+
+  /* -------------------------------------------------------------- inicio */
+  function thumb(type) {
+    if (!thumbCache[type]) {
+      const ex = M.example(type);
+      thumbCache[type] = D.scene({ model: M.buildModel(ex), mode: 'model', W: 360, H: 150, compact: true, aria: 'Ejemplo de ' + M.TYPE_INFO[type].name.toLowerCase() });
+    }
+    return thumbCache[type];
+  }
+
+  function renderHome() {
+    let h = '<div class="hero"><h1>Rigidez</h1><p>Análisis matricial de estructuras planas, con cada matriz a la vista.</p></div><div class="kinds">';
+    for (const t of ['beam', 'frame', 'truss']) {
+      const info = M.TYPE_INFO[t];
+      const saved = loadSaved(t);
+      h += `<section class="kind"><div class="thumb">${thumb(t)}</div><h2>${info.name}</h2><p>${info.blurb}</p><div class="row">` +
+        (saved ? `<button class="btn primary" data-act="open" data-type="${t}">Continuar</button>` : `<button class="btn primary" data-act="new" data-type="${t}">Empezar</button>`) +
+        (saved ? `<button class="btn" data-act="new" data-type="${t}">Nuevo</button>` : '') +
+        `<button class="btn quiet" data-act="example" data-type="${t}">Ver ejemplo</button></div></section>`;
+    }
+    return h + '</div>';
+  }
+
+  /* ------------------------------------------------------------- editor */
+  function topbar(title, sub, back) {
+    return `<header class="top"><button class="iconbtn" data-act="${back}" aria-label="Volver">${ICON.back}</button>` +
+      `<h1>${esc(title)}${sub ? `<small>${esc(sub)}</small>` : ''}</h1></header>`;
+  }
+
+  function tabsBar() {
+    const items = [['nodes', 'Nudos'], ['bars', st.type === 'beam' ? 'Tramos' : 'Barras'], ['loads', 'Cargas'], ['results', 'Resultados']];
+    return `<nav class="tabs" aria-label="Secciones"><div class="tabs-in">` +
+      items.map(([k, l]) => `<button class="tab" data-act="tab" data-tab="${k}"${ui.tab === k ? ' aria-current="page"' : ''}>${ICON[k]}<span>${l}</span></button>`).join('') +
+      '</div></nav>';
+  }
+
+  function tabNodes() {
+    const isBeam = st.type === 'beam';
+    let h = '<div class="pad"><h2 class="sec-title" style="margin-top:6px">Nudos</h2>' +
+      `<p class="hint">${isBeam ? 'Posición x de cada apoyo o unión, en metros, medida desde el extremo izquierdo.' : 'Coordenadas en metros. El eje x va a la derecha y el eje y hacia arriba.'}</p>`;
+    st.nodes.forEach((n, i) => {
+      h += `<div class="item"><div class="item-head"><span class="tag">Nudo ${n.id}</span>` +
+        `<button class="iconbtn" data-act="delNode" data-i="${i}" aria-label="Eliminar nudo ${n.id}">${ICON.trash}</button></div><div class="fields">` +
+        numField('x (m)', `nodes.${i}.x`) + (isBeam ? '' : numField('y (m)', `nodes.${i}.y`)) +
+        selField('Apoyo', `nodes.${i}.sup`, M.SUPPORT_OPTIONS[st.type], { wide: true }) + '</div></div>';
+    });
+    h += '<div class="addrow"><button class="btn" data-act="addNode">Agregar nudo</button></div><div id="warn">' + warnHTML() + '</div>';
+    h += '<h2 class="sec-title">Problema</h2><div class="actions">' +
+      `<button class="btn quiet sm" data-act="reloadExample">${ui.confirm === 'example' ? 'Toca otra vez para confirmar' : 'Cargar ejemplo'}</button>` +
+      `<button class="btn quiet sm" data-act="resetAll">${ui.confirm === 'reset' ? 'Toca otra vez para confirmar' : 'Empezar de cero'}</button></div></div>`;
+    return h;
+  }
+
+  function tabBars() {
+    const mats = M.MATERIALS;
+    let h = '<div class="pad"><h2 class="sec-title" style="margin-top:6px">Material y sección general</h2>' +
+      '<p class="hint">Se aplica a todas las barras, salvo las que tengan sección propia.</p><div class="fields">' +
+      `<label class="fld wide"><span>Material</span><select data-act="preset" aria-label="Material">` +
+      `<option value="">Personalizado</option>` + mats.map((m) => `<option value="${m.key}"${st.mat.E === m.E ? ' selected' : ''}>${esc(m.label)}</option>`).join('') + '</select></label>' +
+      numField('Módulo E (MPa)', 'mat.E', { nosign: true }) + '</div><div class="fields" style="margin-top:6px">' + secFields('sec', st.sec, 'global') + '</div>';
+    h += `<h2 class="sec-title">${st.type === 'beam' ? 'Tramos' : 'Barras'}</h2>` +
+      `<p class="hint">${st.type === 'beam' ? 'Cada tramo une dos nudos consecutivos.' : 'Cada barra une dos nudos. El sentido del nudo inicial al final define sus ejes locales.'}</p>`;
+    st.bars.forEach((b, i) => {
+      h += `<div class="item"><div class="item-head"><span class="tag">${barWord()} ${b.id}</span>` +
+        `<button class="iconbtn" data-act="delBar" data-i="${i}" aria-label="Eliminar ${barWord().toLowerCase()} ${b.id}">${ICON.trash}</button></div><div class="fields">` +
+        selField('Nudo inicial', `bars.${i}.n1`, nodeOptions(), { t: 'i' }) + selField('Nudo final', `bars.${i}.n2`, nodeOptions(), { t: 'i' }) +
+        `<label class="check fld wide"><input type="checkbox" data-p="bars.${i}.custom" data-t="b"${b.custom ? ' checked' : ''}> Sección propia</label>`;
+      if (b.custom) h += numField('Módulo E (MPa)', `bars.${i}.E`, { nosign: true }) + secFields(`bars.${i}.sec`, b.sec, 'bar:' + i);
+      h += '</div></div>';
+    });
+    h += `<div class="addrow"><button class="btn" data-act="addBar">Agregar ${barWord().toLowerCase()}</button></div><div id="warn">${warnHTML()}</div></div>`;
+    return h;
+  }
+
+  const DIRS = [['gy', 'Gravedad (hacia abajo)'], ['gx', 'Horizontal (hacia la derecha)'], ['ly', 'Perpendicular a la barra'], ['lx', 'A lo largo de la barra']];
+  const DIR_HINT = {
+    gy: 'Positivo hacia abajo.', gx: 'Positivo hacia la derecha.',
+    ly: 'Positivo a la izquierda del sentido de la barra.', lx: 'Positivo del nudo inicial al final.',
+  };
+
+  function barLength(id) {
+    const b = st.bars.find((q) => q.id === id);
+    if (!b) return null;
+    const p1 = st.nodes.find((n) => n.id === b.n1), p2 = st.nodes.find((n) => n.id === b.n2);
+    if (!p1 || !p2) return null;
+    const dx = (p2.x || 0) - (p1.x || 0), dy = st.type === 'beam' ? 0 : (p2.y || 0) - (p1.y || 0);
+    return Math.hypot(dx, dy);
+  }
+
+  function tabLoads() {
+    const isBeam = st.type === 'beam', isTruss = st.type === 'truss';
+    let h = '<div class="pad"><h2 class="sec-title" style="margin-top:6px">Cargas en nudos</h2>' +
+      `<p class="hint">${isBeam ? 'Fy positivo hacia arriba.' : 'Fx positivo a la derecha y Fy positivo hacia arriba.'}${isTruss ? '' : ' Mz positivo en sentido antihorario.'} Una carga que baja es negativa.</p>`;
+    st.nodal.forEach((l, i) => {
+      h += `<div class="item"><div class="item-head"><span class="tag">Carga ${i + 1}</span><button class="iconbtn" data-act="delNodal" data-i="${i}" aria-label="Eliminar carga en nudo">${ICON.trash}</button></div><div class="fields">` +
+        selField('En el nudo', `nodal.${i}.node`, nodeOptions(), { t: 'i', wide: true }) +
+        (isBeam ? '' : numField('Fx (kN)', `nodal.${i}.fx`)) + numField('Fy (kN)', `nodal.${i}.fy`) + (isTruss ? '' : numField('Mz (kN·m)', `nodal.${i}.mz`)) +
+        '</div></div>';
+    });
+    h += '<div class="addrow"><button class="btn" data-act="addNodal">Agregar carga en nudo</button></div>';
+
+    if (!isTruss) {
+      h += `<h2 class="sec-title">Cargas en ${isBeam ? 'tramos' : 'barras'}</h2><p class="hint">Distribuidas, puntuales o momentos aplicados dentro de la barra.</p>`;
+      st.member.forEach((l, i) => {
+        const L = barLength(l.bar);
+        const typeOpts = [['udl', 'Distribuida uniforme'], ['point', 'Puntual'], ['moment', 'Momento aplicado']];
+        const label = l.type === 'udl' ? 'Intensidad w (kN/m)' : l.type === 'point' ? 'Carga P (kN)' : 'Momento M (kN·m)';
+        h += `<div class="item"><div class="item-head"><span class="tag">Carga ${i + 1}</span><button class="iconbtn" data-act="delMember" data-i="${i}" aria-label="Eliminar carga en barra">${ICON.trash}</button></div><div class="fields">` +
+          selField(isBeam ? 'En el tramo' : 'En la barra', `member.${i}.bar`, barOptions(), { t: 'i' }) +
+          selField('Tipo', `member.${i}.type`, typeOpts) +
+          numField(label, `member.${i}.val`) +
+          (l.type === 'udl' ? '' : numField(`Posición a (m)${L ? ` de ${fm(L)}` : ''}`, `member.${i}.a`, { nosign: true })) +
+          ((isBeam || l.type === 'moment') ? '' : selField('Dirección', `member.${i}.dir`, DIRS, { wide: true })) +
+          '</div>' +
+          `<p class="hint" style="margin:6px 0 0">${l.type === 'moment' ? 'Positivo en sentido antihorario.' : isBeam ? 'Positivo hacia abajo.' : DIR_HINT[l.dir || 'gy']}${l.type === 'udl' ? '' : ' La posición se mide desde el nudo inicial.'}</p></div>`;
+      });
+      h += '<div class="addrow"><button class="btn" data-act="addMember">Agregar carga en ' + (isBeam ? 'tramo' : 'barra') + '</button></div>';
+    }
+    return h + '</div>';
+  }
+
+  /* ---------------------------------------------------------- resultados */
+  function currentResult() {
+    const model = M.buildModel(st);
+    return { model, res: S.solve(model) };
+  }
+
+  const VIEWS = {
+    beam: [['model', 'Cargas'], ['deformed', 'Deformada'], ['V', 'Cortante'], ['M', 'Momento'], ['R', 'Reacciones']],
+    frame: [['model', 'Cargas'], ['deformed', 'Deformada'], ['N', 'Axial'], ['V', 'Cortante'], ['M', 'Momento'], ['R', 'Reacciones']],
+    truss: [['model', 'Cargas'], ['deformed', 'Deformada'], ['N', 'Axial'], ['R', 'Reacciones']],
+  };
+
+  const f3 = (v) => (Math.abs(v) < 5e-7 ? '0' : v.toFixed(3));
+  const f4 = (v) => (Math.abs(v) < 5e-9 ? '0' : Math.abs(v) >= 0.001 ? v.toFixed(4) : v.toExponential(2));
+
+  function nodeDisp(res, nodeId) {
+    const i = res.nodes.findIndex((n) => n.id === nodeId);
+    const o = {};
+    res.dofNames.forEach((nm, j) => { o[nm] = res.u[i * res.dpn + j]; });
+    return o;
+  }
+
+  function resultsTables(res) {
+    const kind = res.type;
+    let h = '';
+    /* resumen */
+    const ex = res.extremes;
+    h += '<h2 class="sec-title">Resumen</h2><div class="cards">';
+    if (kind === 'truss') {
+      h += `<div class="stat N"><b>${f3(ex.Nmax.v)}</b><span>Mayor tracción (kN), barra ${ex.Nmax.elem}</span></div>` +
+        `<div class="stat N"><b>${f3(ex.Nmin.v)}</b><span>Mayor compresión (kN), barra ${ex.Nmin.elem}</span></div>`;
+      let md = 0, mn = null;
+      res.nodes.forEach((n) => { const d = nodeDisp(res, n.id); const m = Math.hypot(d.ux, d.uy); if (m > md) { md = m; mn = n.id; } });
+      h += `<div class="stat D"><b>${f3(md * 1000)}</b><span>Mayor desplazamiento (mm), nudo ${mn || '-'}</span></div>`;
+    } else {
+      h += `<div class="stat M"><b>${f3(ex.Mmax.v)}</b><span>Momento máximo (kN·m), x = ${f3(ex.Mmax.x)} m en ${barWord().toLowerCase()} ${ex.Mmax.elem}</span></div>` +
+        `<div class="stat M"><b>${f3(ex.Mmin.v)}</b><span>Momento mínimo (kN·m), x = ${f3(ex.Mmin.x)} m en ${barWord().toLowerCase()} ${ex.Mmin.elem}</span></div>` +
+        `<div class="stat V"><b>${f3(Math.abs(ex.Vmax.v) >= Math.abs(ex.Vmin.v) ? ex.Vmax.v : ex.Vmin.v)}</b><span>Cortante de mayor valor (kN)</span></div>`;
+      if (ex.dmax && Math.abs(ex.dmax.v) > 0) h += `<div class="stat D"><b>${f3(Math.abs(ex.dmax.v) * 1000)}</b><span>Flecha máxima (mm) en ${barWord().toLowerCase()} ${ex.dmax.elem}</span></div>`;
+    }
+    h += '</div>';
+
+    /* reacciones */
+    h += '<h2 class="sec-title">Reacciones</h2><div class="tbl-wrap"><table class="res"><thead><tr><th>Nudo</th>' +
+      (kind === 'beam' ? '' : '<th>Rx (kN)</th>') + '<th>Ry (kN)</th>' + (kind === 'truss' ? '' : '<th>Mz (kN·m)</th>') + '</tr></thead><tbody>';
+    for (const r of res.reactions) {
+      h += `<tr><th scope="row">${r.node}</th>` + (kind === 'beam' ? '' : `<td>${r.Rx === null ? '-' : f3(r.Rx)}</td>`) + `<td>${r.Ry === null ? '-' : f3(r.Ry)}</td>` +
+        (kind === 'truss' ? '' : `<td>${r.Mz === null ? '-' : f3(r.Mz)}</td>`) + '</tr>';
+    }
+    h += '</tbody></table></div>';
+    h += `<p class="hint">Rx positivo a la derecha, Ry positivo hacia arriba, Mz positivo antihorario.</p>`;
+
+    /* desplazamientos */
+    h += '<h2 class="sec-title">Desplazamientos de los nudos</h2><div class="tbl-wrap"><table class="res"><thead><tr><th>Nudo</th>' +
+      (kind === 'beam' ? '' : '<th>ux (mm)</th>') + '<th>uy (mm)</th>' + (kind === 'truss' ? '' : '<th>giro (rad)</th>') + '</tr></thead><tbody>';
+    for (const n of res.nodes) {
+      const d = nodeDisp(res, n.id);
+      h += `<tr><th scope="row">${n.id}</th>` + (kind === 'beam' ? '' : `<td>${f3(d.ux * 1000)}</td>`) + `<td>${f3(d.uy * 1000)}</td>` + (kind === 'truss' ? '' : `<td>${f4(d.rz)}</td>`) + '</tr>';
+    }
+    h += '</tbody></table></div>';
+
+    /* esfuerzos en barras */
+    if (kind === 'truss') {
+      h += '<h2 class="sec-title">Fuerza axial en las barras</h2><div class="tbl-wrap"><table class="res"><thead><tr><th>Barra</th><th>N (kN)</th><th>Estado</th></tr></thead><tbody>';
+      for (const el of res.elements) {
+        const n = el.axial;
+        const tag = Math.abs(n) < 1e-6 ? 'Nula' : n > 0 ? '<span class="pill t">Tracción</span>' : '<span class="pill c">Compresión</span>';
+        h += `<tr><th scope="row">${el.id}</th><td>${f3(n)}</td><td class="txt">${tag}</td></tr>`;
+      }
+      h += '</tbody></table></div>';
+    } else {
+      h += `<h2 class="sec-title">Esfuerzos en los extremos</h2><div class="tbl-wrap"><table class="res"><thead><tr><th>${barWord()}</th><th>Sección</th>` +
+        (kind === 'beam' ? '' : '<th>N (kN)</th>') + '<th>V (kN)</th><th>M (kN·m)</th></tr></thead><tbody>';
+      for (const el of res.elements) {
+        const a = S.section(el, 0, 1), b = S.section(el, el.L, 1);
+        h += `<tr><th scope="row">${el.id}</th><td class="txt">inicio</td>` + (kind === 'beam' ? '' : `<td>${f3(a.N)}</td>`) + `<td>${f3(a.V)}</td><td>${f3(a.M)}</td></tr>` +
+          `<tr><th scope="row"></th><td class="txt">final</td>` + (kind === 'beam' ? '' : `<td>${f3(b.N)}</td>`) + `<td>${f3(b.V)}</td><td>${f3(b.M)}</td></tr>`;
+      }
+      h += '</tbody></table></div><p class="hint">N positivo en tracción. V positivo cuando el corte tiende a girar el tramo en sentido horario. M positivo tensa la fibra inferior de una barra horizontal.</p>';
+    }
+
+    h += `<p class="verdict ${res.equilibrium.ok ? 'good' : 'bad'}">${res.equilibrium.ok ? 'Equilibrio verificado: las cargas y las reacciones se anulan.' : 'El equilibrio no se cumple. Revise los datos.'}</p>`;
+    h += '<div class="actions"><button class="btn primary" data-act="steps">Ver paso a paso</button><button class="btn" data-act="copy">Copiar resultados</button></div>';
+    return h;
+  }
+
+  function resultsText(res) {
+    const kind = res.type;
+    const L = [];
+    L.push('Rigidez: ' + M.TYPE_INFO[kind].name + ' (kN, m)');
+    L.push('', 'Reacciones');
+    for (const r of res.reactions) {
+      L.push(`Nudo ${r.node}: ` + [r.Rx !== null && kind !== 'beam' ? `Rx=${f3(r.Rx)}` : '', r.Ry !== null ? `Ry=${f3(r.Ry)}` : '', r.Mz !== null ? `Mz=${f3(r.Mz)}` : ''].filter(Boolean).join('  '));
+    }
+    L.push('', 'Desplazamientos (mm, rad)');
+    for (const n of res.nodes) {
+      const d = nodeDisp(res, n.id);
+      L.push(`Nudo ${n.id}: ` + [d.ux !== undefined ? `ux=${f3(d.ux * 1000)}` : '', `uy=${f3(d.uy * 1000)}`, d.rz !== undefined ? `giro=${f4(d.rz)}` : ''].filter(Boolean).join('  '));
+    }
+    L.push('', kind === 'truss' ? 'Fuerza axial (tracción +)' : 'Esfuerzos en los extremos');
+    for (const el of res.elements) {
+      if (kind === 'truss') L.push(`Barra ${el.id}: N=${f3(el.axial)}`);
+      else {
+        const a = S.section(el, 0, 1), b = S.section(el, el.L, 1);
+        L.push(`${barWord()} ${el.id} inicio: ` + (kind === 'beam' ? '' : `N=${f3(a.N)} `) + `V=${f3(a.V)} M=${f3(a.M)}`);
+        L.push(`${barWord()} ${el.id} final: ` + (kind === 'beam' ? '' : `N=${f3(b.N)} `) + `V=${f3(b.V)} M=${f3(b.M)}`);
+      }
+    }
+    return L.join('\n');
+  }
+
+  function tabResults() {
+    const { model, res } = currentResult();
+    const views = VIEWS[st.type];
+    if (!views.some(([k]) => k === ui.view)) ui.view = 'model';
+    let h = '';
+    if (!res.ok) {
+      h += `<div class="pad"><h2 class="sec-title" style="margin-top:6px">No se pudo calcular</h2><div class="notice">${esc(res.error)}</div>` +
+        '<p class="hint">Revise que los apoyos impidan todos los movimientos de cuerpo rígido y que cada barra tenga material y sección.</p>' +
+        '<div class="actions"><button class="btn" data-act="tab" data-tab="nodes">Revisar nudos y apoyos</button></div></div>';
+      return h;
+    }
+    h += '<div class="seg" role="group" aria-label="Vista">' + views.map(([k, l]) => `<button data-act="view" data-view="${k}" aria-pressed="${ui.view === k}">${l}</button>`).join('') + '</div>';
+    h += `<div class="draw" id="draw">${D.scene({ model, result: res, mode: ui.view, W: 360, H: 250, aria: 'Resultado: ' + ui.view })}</div>`;
+    h += '<div class="pad">' + resultsTables(res) + '</div>';
+    return h;
+  }
+
+  /* ---------------------------------------------------------- paso a paso */
+  function renderSteps() {
+    const { res } = currentResult();
+    let h = topbar('Paso a paso', M.TYPE_INFO[st.type].name, 'backEdit');
+    if (!res.ok) return h + `<div class="pad"><div class="notice">${esc(res.error)}</div></div>`;
+    h += '<div class="pad" style="padding-bottom:0"><p class="hint">Unidades: kN y m. Toca cada sección para abrirla. Las matrices anchas se desplazan hacia los lados.</p></div>';
+    return h + ST.build(res) + '<div class="pad"><div class="actions"><button class="btn" data-act="backEdit">Volver a los resultados</button></div></div>';
+  }
+
+  /* ------------------------------------------------------------- render */
+  function render() {
+    document.body.classList.toggle('home', ui.screen === 'home');
+    let h = '';
+    if (ui.screen === 'home') h = renderHome();
+    else if (ui.screen === 'steps') h = renderSteps();
+    else {
+      h = topbar(M.TYPE_INFO[st.type].name, '', 'home');
+      if (ui.tab !== 'results') h += `<div class="draw" id="draw">${drawModelSVG()}</div>`;
+      h += ui.tab === 'nodes' ? tabNodes() : ui.tab === 'bars' ? tabBars() : ui.tab === 'loads' ? tabLoads() : tabResults();
+      h += tabsBar();
+    }
+    if (ui.toast) h += `<div class="toast" role="status">${esc(ui.toast)}</div>`;
+    root.innerHTML = h;
+    const home = ui.screen === 'home';
+    root.classList.toggle('home', home);
+  }
+
+  function toast(msg) {
+    ui.toast = msg;
+    render();
+    setTimeout(() => { ui.toast = null; const t = root.querySelector('.toast'); if (t) t.remove(); }, 2200);
+  }
+
+  /* --------------------------------------------------------- navegación */
+  function go(screen, tab, push) {
+    ui.screen = screen;
+    if (tab) ui.tab = tab;
+    ui.confirm = null;
+    if (push !== false) { try { history.pushState({ s: screen, t: ui.tab }, ''); } catch (e) { /* ignorar */ } }
+    render();
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('popstate', (e) => {
+    const s = e.state;
+    if (s && s.s) { ui.screen = s.s; ui.tab = s.t || ui.tab; if (ui.screen !== 'home' && !st) ui.screen = 'home'; }
+    else ui.screen = 'home';
+    render();
+  });
+
+  function openType(type, mode) {
+    if (mode === 'new') st = M.emptyState(type);
+    else if (mode === 'example') st = M.example(type);
+    else st = loadSaved(type) || M.emptyState(type);
+    if (!st || st.type !== type) st = M.emptyState(type);
+    save();
+    ui.view = 'model';
+    go('edit', mode === 'example' ? 'results' : 'nodes');
+  }
+
+  /* ---------------------------------------------------- operaciones datos */
+  function addNode() {
+    const last = st.nodes.reduce((a, n) => (n.x > a.x ? n : a), st.nodes[0] || { x: -4, y: 0, id: 0 });
+    const n = { id: st.nextNode++, x: (last.x || 0) + (st.type === 'truss' ? 4 : 4), y: st.type === 'beam' ? 0 : (last.y || 0), sup: st.type === 'beam' ? 'roller' : 'free' };
+    st.nodes.push(n);
+    if (st.type === 'beam' && st.nodes.length > 1) {
+      st.bars.push({ id: st.nextBar++, n1: last.id, n2: n.id, custom: false, E: st.mat.E, sec: M.newSection() });
+    }
+  }
+  function delNode(i) {
+    const id = st.nodes[i].id;
+    st.nodes.splice(i, 1);
+    const gone = new Set(st.bars.filter((b) => b.n1 === id || b.n2 === id).map((b) => b.id));
+    st.bars = st.bars.filter((b) => !gone.has(b.id));
+    st.nodal = st.nodal.filter((l) => l.node !== id);
+    st.member = st.member.filter((l) => !gone.has(l.bar));
+  }
+  function addBar() {
+    const ns = st.nodes.slice().sort((a, b) => (st.type === 'beam' ? a.x - b.x : a.id - b.id));
+    const has = (a, b) => st.bars.some((q) => (q.n1 === a && q.n2 === b) || (q.n1 === b && q.n2 === a));
+    let pair = null;
+    for (let k = 0; k + 1 < ns.length && !pair; k++) if (!has(ns[k].id, ns[k + 1].id)) pair = [ns[k].id, ns[k + 1].id];
+    if (!pair && ns.length >= 2) pair = [ns[0].id, ns[1].id];
+    if (!pair) return;
+    st.bars.push({ id: st.nextBar++, n1: pair[0], n2: pair[1], custom: false, E: st.mat.E, sec: M.newSection() });
+  }
+
+  /* ------------------------------------------------------------- eventos */
+  function parseNum(s) {
+    const t = String(s).replace(',', '.').trim();
+    if (t === '' || t === '-' || t === '.' || t === '-.') return NaN;
+    const n = Number(t);
+    return isFinite(n) ? n : NaN;
+  }
+
+  root.addEventListener('input', (e) => {
+    const el = e.target;
+    if (!el.matches || !el.matches('input[data-p][data-t="n"]')) return;
+    const v = parseNum(el.value);
+    setPath(st, el.dataset.p, v);
+    el.parentElement.classList.toggle('bad', !isFinite(v));
+    save();
+    refreshLive();
+  });
+
+  root.addEventListener('change', (e) => {
+    const el = e.target;
+    if (el.matches('select[data-act="preset"]')) {
+      const m = M.MATERIALS.find((q) => q.key === el.value);
+      if (m) { st.mat.E = m.E; save(); render(); }
+      return;
+    }
+    if (!el.dataset || !el.dataset.p) return;
+    // Los campos numéricos ya se guardan en cada tecla (evento input). Al salir del
+    // campo el navegador dispara change con el texto: no debe guardarse como texto.
+    if (el.dataset.t === 'n') return;
+    let v;
+    if (el.dataset.t === 'b') v = el.checked;
+    else if (el.dataset.t === 'i') v = parseInt(el.value, 10);
+    else v = el.value;
+    setPath(st, el.dataset.p, v);
+    // al cambiar el tipo de carga, valores coherentes
+    if (/^member\.\d+\.type$/.test(el.dataset.p)) {
+      const i = +el.dataset.p.split('.')[1];
+      if (v === 'moment') st.member[i].dir = 'gy';
+    }
+    if (/^bars\.\d+\.(n1|n2)$/.test(el.dataset.p) && st.type === 'beam') {
+      /* en vigas los nudos se reordenan al calcular */
+    }
+    save();
+    render();
+  });
+
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-p]')) e.target.blur();
+  });
+
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b || b.tagName === 'SELECT') return;
+    const act = b.dataset.act;
+    const i = +b.dataset.i;
+    switch (act) {
+      case 'open': openType(b.dataset.type, 'open'); return;
+      case 'new': openType(b.dataset.type, 'new'); return;
+      case 'example': openType(b.dataset.type, 'example'); return;
+      case 'home': go('home'); return;
+      case 'backEdit': go('edit', 'results'); return;
+      case 'tab': go('edit', b.dataset.tab, false); return;
+      case 'view': ui.view = b.dataset.view; render(); return;
+      case 'steps': go('steps'); return;
+      case 'flip': {
+        const v = getPath(st, b.dataset.p);
+        setPath(st, b.dataset.p, fin(v) ? (v === 0 ? 0 : -v) : NaN);
+        const inp = root.querySelector(`input[data-p="${b.dataset.p}"]`);
+        if (inp) { inp.value = val(getPath(st, b.dataset.p)); inp.parentElement.classList.toggle('bad', !fin(getPath(st, b.dataset.p))); }
+        save(); refreshLive(); return;
+      }
+      case 'addNode': addNode(); break;
+      case 'delNode': delNode(i); break;
+      case 'addBar': addBar(); break;
+      case 'delBar': {
+        const id = st.bars[i].id;
+        st.bars.splice(i, 1);
+        st.member = st.member.filter((l) => l.bar !== id);
+        break;
+      }
+      case 'addNodal': st.nodal.push({ node: st.nodes[0] ? st.nodes[0].id : 1, fx: 0, fy: -10, mz: 0 }); break;
+      case 'delNodal': st.nodal.splice(i, 1); break;
+      case 'addMember': {
+        if (!st.bars.length) { toast('Primero agregue una barra.'); return; }
+        const bar = st.bars[0];
+        const L = barLength(bar.id) || 0;
+        st.member.push({ bar: bar.id, type: 'udl', val: 10, a: Math.round((L / 2) * 100) / 100, dir: 'gy' });
+        break;
+      }
+      case 'delMember': st.member.splice(i, 1); break;
+      case 'reloadExample':
+        if (ui.confirm !== 'example') { ui.confirm = 'example'; render(); return; }
+        ui.confirm = null; st = M.example(st.type); break;
+      case 'resetAll':
+        if (ui.confirm !== 'reset') { ui.confirm = 'reset'; render(); return; }
+        ui.confirm = null; st = M.emptyState(st.type); break;
+      case 'copy': {
+        const { res } = currentResult();
+        const txt = res.ok ? resultsText(res) : '';
+        const done = () => toast('Resultados copiados');
+        const fail = () => toast('No se pudo copiar. Selecciona el texto de las tablas.');
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fail); else fail();
+        return;
+      }
+      default: return;
+    }
+    save();
+    render();
+  });
+
+  /* --------------------------------------------------------- inicio / PWA */
+  try { history.replaceState({ s: 'home' }, ''); } catch (e) { /* ignorar */ }
+  render();
+
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && location.hostname !== 'localhost') {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+
+  // utilidades para pruebas automáticas
+  window.__rigidez = { ui, getState: () => st, openType, render };
+})();
+
+</script>
+</body>
+</html>
