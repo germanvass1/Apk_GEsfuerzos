@@ -1,0 +1,8 @@
+{
+  "appId": "com.rigidez.estructuras",
+  "appName": "Rigidez",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
